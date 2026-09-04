@@ -44,6 +44,16 @@ export async function login(formData: FormData) {
 export async function signup(formData: FormData) {
   const supabase = createClient()
 
+  // Verifica Codice Invito per Accesso Privato (Invite-Only Gate)
+  const expectedInviteCode = process.env.APP_INVITE_CODE?.trim()
+  const providedInviteCode = (formData.get('inviteCode') as string || '').trim()
+
+  if (expectedInviteCode) {
+    if (!providedInviteCode || providedInviteCode !== expectedInviteCode) {
+      redirect(`/login?message=${encodeURIComponent("Accesso riservato: Codice invito non valido o mancante.")}`)
+    }
+  }
+
   const data = {
     email: formData.get('email') as string,
     password: formData.get('password') as string,

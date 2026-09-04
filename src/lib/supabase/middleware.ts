@@ -70,6 +70,12 @@ export async function updateSession(request: NextRequest) {
     request.nextUrl.pathname.startsWith('/studio') ||
     request.nextUrl.pathname.startsWith('/settings')
 
+  if (request.nextUrl.pathname === '/') {
+    const url = request.nextUrl.clone()
+    url.pathname = user ? '/dashboard' : '/login'
+    return NextResponse.redirect(url)
+  }
+
   if (!user && isProtectedRoute) {
     // no user, potentially respond by redirecting the user to the login page
     const url = request.nextUrl.clone()
