@@ -4,6 +4,19 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 
+import crypto from 'crypto'
+
+function verifyInviteCodeTimingSafe(provided: string, expected: string): boolean {
+  const provClean = provided.trim()
+  const expClean = expected.trim()
+  if (!provClean || !expClean) return false
+
+  // Confronto tramite digest SHA-256 a tempo costante (Zero Timing Leak)
+  const hashA = crypto.createHash('sha256').update(provClean.toUpperCase()).digest()
+  const hashB = crypto.createHash('sha256').update(expClean.toUpperCase()).digest()
+  return crypto.timingSafeEqual(hashA, hashB)
+}
+
 function getSafeErrorMessage(errorMsg: string): string {
   const lower = (errorMsg || '').toLowerCase()
   if (lower.includes('invalid login credentials') || lower.includes('invalid credentials')) {
@@ -44,13 +57,16 @@ export async function login(formData: FormData) {
 export async function signup(formData: FormData) {
   const supabase = createClient()
 
-  // Verifica Codice Invito per Accesso Privato (Invite-Only Gate)
+  // Verifica Rigorosa Codice Invito per Accesso Privato (Anti-Bruteforce & Timing-Safe)
   const expectedInviteCode = process.env.APP_INVITE_CODE?.trim()
   const providedInviteCode = (formData.get('inviteCode') as string || '').trim()
 
   if (expectedInviteCode) {
-    if (!providedInviteCode || providedInviteCode !== expectedInviteCode) {
-      redirect(`/login?message=${encodeURIComponent("Accesso riservato: Codice invito non valido o mancante.")}`)
+    const isValid = verifyInviteCodeTimingSafe(providedInviteCode, expectedInviteCode)
+    if (!isValid) {
+      // Ritardo difensivo di 1.2s contro attacchi automatici a dizionario
+      await new Promise(resolve => setTimeout(resolve, 1200))
+      redirect(`/login?message=${encodeURIComponent("Accesso riservato: Codice invito non valido o non autorizzato.")}`)
     }
   }
 

@@ -65,7 +65,7 @@ export default function LoginPage({
               className="w-full px-3 py-2 bg-zinc-50 border-2 border-zinc-400 text-black text-xs font-mono placeholder:text-zinc-400 focus:outline-none focus:border-black transition"
               type="text"
               name="inviteCode"
-              placeholder="ES: STUDYCLOUD_VIP_2026"
+              placeholder="ES: SC-INV-XXXX-XXXX-XXXX"
             />
           </div>
 
