@@ -10,7 +10,7 @@ import {
 } from 'lucide-react'
 import { 
   autoProcessAndClassify, createFolder, createCourse, renameDocument, 
-  renameFolder, renameCourse, moveDocumentAction, duplicateDocumentAction,
+  renameFolder, renameCourse, moveDocumentAction, moveFolderAction, duplicateDocumentAction,
   deleteCourse, deleteFolder, getUserProfile, setupUniversityProfile,
   ingestYouTubeVideoAction, reindexAllMissingEmbeddingsAction, reindexSingleDocumentAction
 } from './actions'
@@ -329,6 +329,9 @@ export default function FilesPage() {
       if (draggedItem.type === 'file') {
         await moveDocumentAction(draggedItem.id, targetFolderId, currentCourseId)
         showToast(`File "${draggedItem.title}" spostato`)
+      } else if (draggedItem.type === 'folder') {
+        await moveFolderAction(draggedItem.id, targetFolderId)
+        showToast(`Cartella "${draggedItem.title}" spostata`)
       }
       setDraggedItem(null)
       await fetchData()

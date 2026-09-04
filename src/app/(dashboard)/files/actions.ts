@@ -305,6 +305,84 @@ export async function moveDocumentAction(documentId: string, targetFolderId: str
   return { success: true }
 }
 
+export async function moveFolderAction(folderId: string, targetFolderId: string) {
+  const supabase = createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error("Non autenticato")
+
+  if (folderId === targetFolderId) throw new Error("Impossibile spostare una cartella in se stessa")
+
+  const admin = createAdminClient()
+
+  // 1. Verifica ownership della cartella sorgente (Fix IDOR)
+  const { data: folder, error: folderErr } = await admin
+    .from('folders')
+    .select('id, name, path')
+    .eq('id', folderId)
+    .eq('user_id', user.id)
+    .single()
+
+  if (folderErr || !folder) throw new Error("Cartella non trovata o accesso non autorizzato")
+
+  // 2. Verifica ownership della cartella destinazione
+  const { data: targetFolder, error: targetErr } = await admin
+    .from('folders')
+    .select('id, name, path')
+    .eq('id', targetFolderId)
+    .eq('user_id', user.id)
+    .single()
+
+  if (targetErr || !targetFolder) throw new Error("Cartella destinazione non trovata o accesso non autorizzato")
+
+  const oldPath = folder.path
+  const newPath = `${targetFolder.path}/${folder.name}`
+
+  // 3. Guard: prevenzione spostamento circolare (es. A -> A/B)
+  if (newPath.startsWith(oldPath + '/') || newPath === oldPath) {
+    throw new Error("Impossibile spostare una cartella dentro una sua sottocartella")
+  }
+
+  // 4. Controlla che non esista già una cartella con lo stesso path nella destinazione
+  const { data: existing } = await admin
+    .from('folders')
+    .select('id')
+    .eq('path', newPath)
+    .eq('user_id', user.id)
+    .single()
+
+  if (existing) throw new Error(`Esiste già una cartella "${folder.name}" in questa posizione`)
+
+  // 5. Aggiorna la cartella spostata
+  const { error: updateErr } = await admin
+    .from('folders')
+    .update({ path: newPath })
+    .eq('id', folderId)
+    .eq('user_id', user.id)
+
+  if (updateErr) throw updateErr
+
+  // 6. Aggiorna ricorsivamente tutte le sottocartelle
+  const { data: subfolders } = await admin
+    .from('folders')
+    .select('id, path')
+    .like('path', `${oldPath}/%`)
+    .eq('user_id', user.id)
+
+  if (subfolders && subfolders.length > 0) {
+    for (const sub of subfolders) {
+      const updatedSubPath = sub.path.replace(oldPath, newPath)
+      await admin
+        .from('folders')
+        .update({ path: updatedSubPath })
+        .eq('id', sub.id)
+        .eq('user_id', user.id)
+    }
+  }
+
+  revalidatePath('/files')
+  return { success: true }
+}
+
 export async function duplicateDocumentAction(documentId: string, targetFolderId?: string | null, targetCourseId?: string | null) {
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
