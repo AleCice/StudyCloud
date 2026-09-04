@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap');
+/* Fonts are loaded via <link> in layout.tsx for non-blocking performance */
 
 :root {
   --sidebar-width: 240px;
@@ -26,6 +26,7 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* SHARP GEOMETRIC ICONS - SQUARE CAPS AND MITER JOINS */
@@ -62,6 +63,13 @@ svg, svg * {
   color: #000000 !important;
 }
 
+html {
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
+}
+
 body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   background: var(--color-bg);
@@ -70,11 +78,35 @@ body {
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   overflow: hidden;
-  height: 100vh;
+  height: 100dvh;
+  height: 100vh; /* fallback for older browsers */
+  overscroll-behavior: none;
 }
 
-html, body, #__next {
+@supports (height: 100dvh) {
+  body {
+    height: 100dvh;
+  }
+}
+
+#__next {
   height: 100%;
+}
+
+/* iOS Standalone: prevent text selection on interactive elements */
+button, a, nav, [role="button"] {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Prevent Safari focus-zoom on inputs (font-size must be >= 16px) */
+input, textarea, select {
+  font-size: 16px;
+}
+
+/* Prevent horizontal overflow (rubber-banding fix) */
+html, body {
+  overflow-x: hidden;
 }
 
 /* Sharp Architectural Scrollbar */
@@ -117,6 +149,7 @@ html, body, #__next {
   transition: background 0.1s;
   user-select: none;
   border-radius: 0px !important;
+  min-height: 44px;
 }
 
 .context-menu-item:hover {
@@ -154,6 +187,7 @@ html, body, #__next {
   z-index: 900;
   animation: fadeIn 0.12s ease-out;
   backdrop-blur: none;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
 }
 .modal-content {
   background: white;
@@ -209,6 +243,16 @@ html, body, #__next {
   animation: cursorBlink 0.75s infinite;
 }
 
+/* Skeleton Loading Shimmer */
+@keyframes skeletonPulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.8; }
+}
+.skeleton-pulse {
+  animation: skeletonPulse 1.5s ease-in-out infinite;
+  background: #e4e4e7;
+}
+
 /* MONOCHROME REMAPPING - ELIMINATE BLUE FROM ENTIRE SITE */
 .bg-blue-50, .bg-blue-50\/40, .bg-blue-50\/50, .bg-blue-50\/60, .bg-blue-50\/70 {
   background-color: #f4f4f5 !important;
@@ -238,4 +282,3 @@ html, body, #__next {
 .ring-blue-500, .ring-blue-600 {
   --tw-ring-color: #000000 !important;
 }
-

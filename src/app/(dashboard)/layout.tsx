@@ -31,7 +31,7 @@ export default function DashboardLayout({
   ) || { label: 'StudyCloud' }
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-white">
+    <div className="flex h-[100dvh] w-screen overflow-hidden bg-white" style={{ height: '100dvh' }}>
       {/* 1. SIDEBAR DESKTOP (Visibile solo da schermo tablet/desktop md:flex) */}
       <aside className="hidden md:flex w-[var(--sidebar-width)] bg-[var(--color-bg-secondary)] border-r border-[var(--color-border)] flex-col shrink-0">
         {/* Logo & Brand */}
@@ -56,6 +56,7 @@ export default function DashboardLayout({
               <Link 
                 key={item.href}
                 href={item.href}
+                prefetch={true}
                 className={`flex items-center gap-3 px-3 py-2 text-[13px] font-medium transition-colors border ${
                   isActive 
                     ? 'bg-black text-white border-black font-semibold' 
@@ -86,8 +87,11 @@ export default function DashboardLayout({
       {/* 2. MAIN CONTAINER (Desktop & Mobile) */}
       <div className="flex-1 flex flex-col h-full overflow-hidden min-w-0">
         {/* MOBILE TOP BAR (Visibile solo su smartphone < md) */}
-        <header className="flex md:hidden h-14 bg-white border-b border-zinc-200 items-center justify-between px-4 shrink-0 z-40">
-          <div className="flex items-center gap-2.5">
+        <header 
+          className="flex md:hidden bg-white border-b border-zinc-200 items-center justify-between px-4 shrink-0 z-40"
+          style={{ paddingTop: 'max(0.5rem, env(safe-area-inset-top))' }}
+        >
+          <div className="flex items-center gap-2.5 py-2">
             <div className="w-7 h-7 bg-black text-white flex items-center justify-center font-bold text-xs">
               S
             </div>
@@ -100,7 +104,7 @@ export default function DashboardLayout({
           <form action="/api/auth/logout" method="POST">
             <button 
               type="submit"
-              className="p-2 text-zinc-600 hover:text-black hover:bg-zinc-100 transition-colors border border-zinc-200"
+              className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center text-zinc-600 hover:text-black hover:bg-zinc-100 transition-colors border border-zinc-200 active:scale-95"
               title="Disconnetti"
             >
               <LogOut className="w-4 h-4" />
@@ -109,13 +113,20 @@ export default function DashboardLayout({
         </header>
 
         {/* Pagina Principale */}
-        <main className="flex-1 overflow-hidden flex flex-col bg-white pb-16 md:pb-0 relative">
+        <main 
+          className="flex-1 overflow-hidden flex flex-col bg-white relative"
+          style={{ paddingBottom: 'calc(4rem + env(safe-area-inset-bottom, 0px))' }}
+        >
+          <style>{`@media (min-width: 768px) { main { padding-bottom: 0 !important; } }`}</style>
           {children}
         </main>
 
         {/* 3. MOBILE BOTTOM NAVIGATION BAR */}
-        <nav className="flex md:hidden fixed bottom-0 inset-x-0 bg-white border-t border-zinc-200 z-50 px-1 py-1 shadow-xs">
-          <div className="grid grid-cols-6 w-full items-center">
+        <nav 
+          className="flex md:hidden fixed bottom-0 inset-x-0 bg-white border-t border-zinc-200 z-50 px-1 shadow-xs"
+          style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+        >
+          <div className="grid grid-cols-7 w-full items-center py-1">
             {navItems.map(item => {
               const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
               const Icon = item.icon
@@ -123,7 +134,8 @@ export default function DashboardLayout({
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`flex flex-col items-center justify-center py-1 px-0.5 transition-colors min-h-[48px] border-t-2 ${
+                  prefetch={true}
+                  className={`flex flex-col items-center justify-center py-1 px-0.5 transition-all min-h-[48px] border-t-2 active:scale-90 ${
                     isActive
                       ? 'text-black font-bold border-black bg-zinc-50'
                       : 'text-zinc-500 hover:text-black border-transparent'

@@ -1,12 +1,23 @@
 {
   "name": "StudyCloud",
   "short_name": "StudyCloud",
-  "description": "Knowledge base personale e tutor AI",
-  "start_url": "/",
+  "description": "Knowledge base personale e tutor AI per lo studio universitario",
+  "start_url": "/dashboard",
+  "scope": "/",
+  "id": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
+  "orientation": "any",
+  "background_color": "#000000",
   "theme_color": "#000000",
+  "lang": "it",
+  "categories": ["education", "productivity"],
   "icons": [
+    {
+      "src": "/icons/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    },
     {
       "src": "/icons/icon-192x192.png",
       "sizes": "192x192",
@@ -16,7 +27,8 @@
     {
       "src": "/icons/icon-512x512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ]
 }
