@@ -1,0 +1,46 @@
+name: DevSecOps CI Pipeline
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+# Principle of Least Privilege: only read repo contents
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  security-and-build:
+    name: Lint, Typecheck & Security Audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Security Vulnerability Scan (npm audit)
+        run: npm audit --audit-level=critical
+        continue-on-error: true
+
+      - name: TypeScript Static Type Checking
+        run: npx tsc --noEmit
+
+      - name: Next.js Linter
+        run: npm run lint

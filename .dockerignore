@@ -1,0 +1,34 @@
+# Git
+.git
+.gitignore
+
+# Dependencies & Build
+node_modules
+npm-debug.log
+.next
+out
+build
+*.tsbuildinfo
+
+# Secrets & Environment variables
+.env
+.env.*
+.env*.local
+env.local
+*.pem
+*.key
+*.cert
+credentials
+service-account*.json
+
+# Documentation & Internal specs
+docs/
+*.bak
+*.tmp
+*.log
+
+# Editor & OS files
+.vscode
+.idea
+.DS_Store
+Thumbs.db
