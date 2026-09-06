@@ -5,6 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import { getAiUsageAnalytics } from '@/lib/ai/usage'
 import { logAuditEvent } from '@/lib/audit'
+import crypto from 'crypto'
 
 export async function getSettingsData() {
   const supabase = createClient()
@@ -166,3 +167,83 @@ export async function exportAllUserData() {
     chatSessions: chatSessions.data || []
   }
 }
+
+/* =========================================================================
+   PERSISTENZA SICURA CHIAVE API GOOGLE NEL DATABASE CON CRITTOGRAFIA AES-256-GCM
+   Supporta il cambio di dispositivo sincronizzando la chiave con Supabase.
+   ========================================================================= */
+
+function getEncryptionKey(userId: string): Buffer {
+  const secret = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'studycloud-vault-master-key-2026'
+  return crypto.scryptSync(secret, `user_vault_salt_${userId}`, 32)
+}
+
+function encryptApiKey(text: string, userId: string): string {
+  const key = getEncryptionKey(userId)
+  const iv = crypto.randomBytes(12) // 96-bit standard IV per AES-GCM
+  const cipher = crypto.createCipheriv('aes-256-gcm', key, iv)
+  let enc = cipher.update(text, 'utf8', 'hex')
+  enc += cipher.final('hex')
+  const tag = cipher.getAuthTag().toString('hex')
+  return JSON.stringify({ iv: iv.toString('hex'), tag, enc })
+}
+
+function decryptApiKey(encryptedJson: string, userId: string): string | null {
+  try {
+    const { iv, tag, enc } = JSON.parse(encryptedJson)
+    const key = getEncryptionKey(userId)
+    const decipher = crypto.createDecipheriv('aes-256-gcm', key, Buffer.from(iv, 'hex'))
+    decipher.setAuthTag(Buffer.from(tag, 'hex'))
+    let dec = decipher.update(enc, 'hex', 'utf8')
+    dec += decipher.final('utf8')
+    return dec
+  } catch (err) {
+    console.error('Errore decifratura API Key:', err)
+    return null
+  }
+}
+
+export async function saveUserApiKeyAction(geminiApiKey: string) {
+  const supabase = createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error("Non autenticato")
+
+  const admin = createAdminClient()
+  const { data: profile } = await admin.from('profiles').select('preferences').eq('id', user.id).single()
+  const currentPrefs = { ...(profile?.preferences || {}) }
+
+  const clean = (geminiApiKey || '').trim()
+  if (!clean) {
+    delete currentPrefs.encrypted_gemini_api_key
+  } else {
+    currentPrefs.encrypted_gemini_api_key = encryptApiKey(clean, user.id)
+  }
+
+  await admin.from('profiles').update({ preferences: currentPrefs }).eq('id', user.id)
+
+  await logAuditEvent({
+    userId: user.id,
+    action: 'SETTINGS_API_KEY_UPDATE',
+    entityType: 'settings',
+    details: { hasKey: Boolean(clean) }
+  })
+
+  revalidatePath('/settings')
+  return { success: true }
+}
+
+export async function getUserApiKeyAction(): Promise<string | null> {
+  const supabase = createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return null
+
+  const admin = createAdminClient()
+  const { data: profile } = await admin.from('profiles').select('preferences').eq('id', user.id).single()
+  const prefs = profile?.preferences || {}
+
+  const enc = prefs.encrypted_gemini_api_key
+  if (!enc) return null
+
+  return decryptApiKey(enc, user.id)
+}
+

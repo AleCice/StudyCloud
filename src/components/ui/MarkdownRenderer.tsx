@@ -12,19 +12,46 @@ interface Props {
 }
 
 /**
- * Normalizza e corregge le espressioni matematiche LaTeX prima del parsing
+ * Normalizza e corregge le espressioni matematiche LaTeX prima del parsing KaTeX
  */
 function preprocessMath(text: string): string {
   if (!text) return ''
 
-  return text
-    // Converte \[ formula \] in $$ formula $$
-    .replace(/\\\[([\s\S]*?)\\\]/g, '$$$$$1$$$$')
-    // Converte \( formula \) in $ formula $
-    .replace(/\\\(([\s\S]*?)\\\)/g, '$$$1$$')
-    // Corregge indici malformati tipici degli LLM (es. \vec{E}n -> \vec{E}_n, \sum{i=1} -> \sum_{i=1})
+  let processed = text
+
+  // 1. Converte caratteri di controllo ASCII generati da cattivo escaping JSON degli LLM
+  processed = processed
+    .replace(/\x0Crac\{/g, '\\frac{')
+    .replace(/\x0Crac\b/g, '\\frac')
+    .replace(/\x08egin\{/g, '\\begin{')
+    .replace(/\x08eta\b/g, '\\beta')
+    .replace(/\x08ar\{/g, '\\bar{')
+    .replace(/\x08mathbf\{/g, '\\mathbf{')
+
+  // 2. Converte \[ formula \] in $$ formula $$
+  processed = processed.replace(/\\\[([\s\S]*?)\\\]/g, '$$$$$1$$$$')
+
+  // 3. Converte \( formula \) in $ formula $
+  processed = processed.replace(/\\\(([\s\S]*?)\\\)/g, '$$$1$$')
+
+  // 4. Se ambienti LaTeX nudi (\begin{aligned}, cases, etc.) non sono racchiusi in $$, racchiudili in $$...$$
+  processed = processed.replace(
+    /(?<!\$\$)\s*(\\begin\{(aligned|equation\*?|cases|matrix|pmatrix|bmatrix|vmatrix|gather\*?)\}[\s\S]*?\\end\{\2\})\s*(?!\$\$)/g,
+    '\n\n$$$$\n$1\n$$$$\n\n'
+  )
+
+  // 5. Corregge spazi all'inizio o alla fine delle formule inline ($ \vec{E} $ -> $\vec{E}$)
+  processed = processed.replace(/(?<!\$)\$\s+([^\$\n]+?)\s+\$(?!\$)/g, '$$$1$$')
+  processed = processed.replace(/(?<!\$)\$\s+([^\$\n]+?)\$(?!\$)/g, '$$$1$$')
+  processed = processed.replace(/(?<!\$)\$([^\$\n]+?)\s+\$(?!\$)/g, '$$$1$$')
+
+  // 6. Corregge indici e sommatorie malformati dagli LLM
+  processed = processed
     .replace(/\\vec\{([A-Za-z]+)\}([a-zA-Z0-9]+)/g, '\\vec{$1}_{$2}')
     .replace(/\\sum\{([^}]+)\}/g, '\\sum_{$1}')
+    .replace(/\\int\{([^}]+)\}/g, '\\int_{$1}')
+
+  return processed
 }
 
 export default function MarkdownRenderer({ content, className = '' }: Props) {

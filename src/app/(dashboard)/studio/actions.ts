@@ -317,6 +317,106 @@ export interface GenerateStudioArtifactParams {
   userModel?: string | null
 }
 
+function extractJsonCandidate(raw: string): string {
+  let s = raw.trim()
+  if (s.startsWith('```json')) s = s.slice(7)
+  else if (s.startsWith('```')) s = s.slice(3)
+  if (s.endsWith('```')) s = s.slice(0, -3)
+  s = s.trim()
+  const firstBrace = s.indexOf('{')
+  const lastBrace = s.lastIndexOf('}')
+  if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+    s = s.slice(firstBrace, lastBrace + 1)
+  }
+  return s
+}
+
+function sanitizeJsonWithLatex(jsonStr: string): string {
+  const s = extractJsonCandidate(jsonStr)
+  let result = ''
+  let inString = false
+  let i = 0
+
+  while (i < s.length) {
+    const char = s[i]
+
+    if (char === '"' && (i === 0 || s[i - 1] !== '\\')) {
+      inString = !inString
+      result += char
+      i++
+      continue
+    }
+
+    if (inString && char === '\\') {
+      const nextChar = s[i + 1]
+      const nextWordMatch = s.slice(i + 1).match(/^[a-zA-Z]+/)?.[0] || ''
+
+      // Escape JSON standard
+      if (nextChar === '"' || nextChar === '\\' || nextChar === '/') {
+        result += '\\' + nextChar
+        i += 2
+        continue
+      }
+
+      // Parola chiave LaTeX comune
+      const isLatexToken = [
+        'frac', 'nabla', 'rho', 'tau', 'theta', 'times', 'to', 'text', 'tan', 'top', 'tilde',
+        'beta', 'begin', 'mathbf', 'boldsymbol', 'bar', 'binom', 'big', 'left', 'right',
+        'alpha', 'gamma', 'delta', 'epsilon', 'varepsilon', 'zeta', 'eta', 'iota', 'kappa',
+        'lambda', 'mu', 'nu', 'xi', 'pi', 'varpi', 'sigma', 'varsigma', 'upsilon', 'phi',
+        'varphi', 'chi', 'psi', 'omega', 'partial', 'sum', 'prod', 'int', 'iint', 'iiint',
+        'oint', 'sqrt', 'infty', 'approx', 'neq', 'leq', 'geq', 'pm', 'mp', 'forall',
+        'exists', 'in', 'notin', 'subset', 'subseteq', 'cup', 'cap', 'vec', 'cdot', 'cases',
+        'aligned', 'matrix', 'pmatrix', 'bmatrix', 'cos', 'sin', 'log', 'ln', 'lim', 'sup', 'inf'
+      ].some(token => nextWordMatch.toLowerCase().startsWith(token))
+
+      if (isLatexToken) {
+        result += '\\\\'
+        i++
+        continue
+      }
+
+      // Valid JSON control characters se non associati a token LaTeX
+      if (['n', 'r', 't', 'b', 'f'].includes(nextChar) && (!nextWordMatch || nextWordMatch.length <= 1)) {
+        result += '\\' + nextChar
+        i += 2
+        continue
+      }
+
+      if (nextChar === 'u' && /^[0-9a-fA-F]{4}/.test(s.slice(i + 2, i + 6))) {
+        result += s.slice(i, i + 6)
+        i += 6
+        continue
+      }
+
+      // Raddoppia backslash singolo
+      result += '\\\\'
+      i++
+      continue
+    }
+
+    result += char
+    i++
+  }
+
+  return result
+}
+
+function safeParseStudioJson<T>(raw: string, fallback: T): T {
+  try {
+    const sanitized = sanitizeJsonWithLatex(raw)
+    return JSON.parse(sanitized)
+  } catch (err1) {
+    try {
+      const candidate = extractJsonCandidate(raw)
+      return JSON.parse(candidate)
+    } catch (err2) {
+      console.error("Errore parsing JSON da AI:", err2, raw)
+      return fallback
+    }
+  }
+}
+
 export async function generateStudioArtifactAction(params: GenerateStudioArtifactParams): Promise<StudioArtifact> {
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -475,25 +575,16 @@ RISPONDI ESCLUSIVAMENTE CON UN OGGETTO JSON VALIDO (senza markdown wrapping, sen
       temperature: 0.2
     })
 
-    let cleanJson = text.trim()
-    if (cleanJson.startsWith('```json')) cleanJson = cleanJson.slice(7)
-    if (cleanJson.startsWith('```')) cleanJson = cleanJson.slice(3)
-    if (cleanJson.endsWith('```')) cleanJson = cleanJson.slice(0, -3)
-
-    let parsed: any
-    try {
-      parsed = JSON.parse(cleanJson.trim())
-    } catch (err) {
-      console.error("Errore parsing JSON slide:", err, cleanJson)
-      parsed = {
-        title: params.topicPrompt || "Presentazione Didattica",
-        slides: [
-          { id: "1", title: params.topicPrompt || "Presentazione Didattica", subtitle: "Studio", layout: "title", inverted: true },
-          { id: "2", title: "Concetti Fondamentali", layout: "bullets", bullets: ["Definizione formale", "Condizioni di validità", "Riferimento alle dispense"] },
-          { id: "3", title: "Verifica e Q&A", layout: "bullets", bullets: ["Formule chiave", "Domande tipiche del docente"], inverted: true }
-        ]
-      }
+    const fallbackPresentation = {
+      title: params.topicPrompt || "Presentazione Didattica",
+      slides: [
+        { id: "1", title: params.topicPrompt || "Presentazione Didattica", subtitle: "Studio", layout: "title" as const, inverted: true },
+        { id: "2", title: "Concetti Fondamentali", layout: "bullets" as const, bullets: ["Definizione formale", "Condizioni di validità", "Riferimento alle dispense"] },
+        { id: "3", title: "Verifica e Q&A", layout: "bullets" as const, bullets: ["Formule chiave", "Domande tipiche del docente"], inverted: true }
+      ]
     }
+
+    const parsed: any = safeParseStudioJson(text, fallbackPresentation)
 
     const saved = await saveStudioArtifact({
       title: parsed.title || params.topicPrompt || 'Presentazione Didattica',
@@ -562,23 +653,14 @@ RISPONDI ESCLUSIVAMENTE CON UN OGGETTO JSON VALIDO (senza markdown wrapping, sen
       temperature: 0.2
     })
 
-    let cleanJson = text.trim()
-    if (cleanJson.startsWith('```json')) cleanJson = cleanJson.slice(7)
-    if (cleanJson.startsWith('```')) cleanJson = cleanJson.slice(3)
-    if (cleanJson.endsWith('```')) cleanJson = cleanJson.slice(0, -3)
-
-    let parsed: any
-    try {
-      parsed = JSON.parse(cleanJson.trim())
-    } catch (err) {
-      console.error("Errore parsing JSON documento:", err, cleanJson)
-      parsed = {
-        title: params.topicPrompt || "Dispensa di Studio",
-        sections: [
-          { id: "1", title: "1.0 Analisi dei Materiali", content: text, keyPoints: ["Riferimento alle dispense caricate"] }
-        ]
-      }
+    const fallbackDoc = {
+      title: params.topicPrompt || "Dispensa di Studio",
+      sections: [
+        { id: "1", title: "1.0 Analisi dei Materiali", content: text, keyPoints: ["Riferimento alle dispense caricate"] }
+      ]
     }
+
+    const parsed: any = safeParseStudioJson(text, fallbackDoc)
 
     // Ricostruisce il markdown completo senza testi riempitivi
     const fullMarkdown = `# ${parsed.title}\n\n` +

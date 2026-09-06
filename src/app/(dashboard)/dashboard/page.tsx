@@ -78,6 +78,7 @@ export default async function DashboardPage() {
       content: c.content || '',
       chunk_index: c.chunk_index,
       docTitle: doc?.title || 'Documento',
+      courseId: doc?.courseId || 'general',
       courseName: doc?.courseId ? coursesMap.get(doc.courseId) || 'Generale' : 'Generale'
     }
   })
@@ -169,7 +170,7 @@ export default async function DashboardPage() {
         </div>
 
         {/* 3D Vector Space */}
-        <VectorSpace3D chunks={vectorChunks} totalVectorsCount={chunksCount || 0} />
+        <VectorSpace3D chunks={vectorChunks} courses={courses || []} totalVectorsCount={chunksCount || 0} />
 
         {/* Two-Column Detail Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -193,54 +194,83 @@ export default async function DashboardPage() {
 
             <div className="p-0 flex-1 overflow-x-auto">
               {recentDocs && recentDocs.length > 0 ? (
-                <table className="w-full text-left text-xs font-mono border-collapse">
-                  <thead>
-                    <tr className="border-b border-black bg-zinc-100 text-zinc-700">
-                      <th className="p-3 font-bold uppercase text-[10px]">Titolo</th>
-                      <th className="p-3 font-bold uppercase text-[10px]">Corso</th>
-                      <th className="p-3 font-bold uppercase text-[10px]">Dimensione</th>
-                      <th className="p-3 font-bold uppercase text-[10px]">Stato</th>
-                      <th className="p-3 font-bold uppercase text-[10px] text-right">Azione</th>
-                    </tr>
-                  </thead>
-                  <tbody>
+                <>
+                  {/* Desktop Table View */}
+                  <table className="hidden md:table w-full text-left text-xs font-mono border-collapse">
+                    <thead>
+                      <tr className="border-b border-black bg-zinc-100 text-zinc-700">
+                        <th className="p-3 font-bold uppercase text-[10px]">Titolo</th>
+                        <th className="p-3 font-bold uppercase text-[10px]">Corso</th>
+                        <th className="p-3 font-bold uppercase text-[10px]">Dimensione</th>
+                        <th className="p-3 font-bold uppercase text-[10px]">Stato</th>
+                        <th className="p-3 font-bold uppercase text-[10px] text-right">Azione</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {recentDocs.map((doc) => {
+                        const courseName = doc.course_id ? (coursesMap.get(doc.course_id) || 'Generale') : 'Generale'
+                        const sizeKb = doc.size_bytes ? `${Math.round(doc.size_bytes / 1024)} KB` : 'N/D'
+
+                        return (
+                          <tr key={doc.id} className="border-b border-zinc-200 hover:bg-zinc-50 transition-colors">
+                            <td className="p-3 font-bold text-black flex items-center gap-2">
+                              <span className="w-1.5 h-1.5 bg-black"></span>
+                              <span className="truncate max-w-[180px] sm:max-w-[220px]" title={doc.title}>
+                                {doc.title}
+                              </span>
+                            </td>
+                            <td className="p-3 text-zinc-600">
+                              <span className="border border-zinc-300 px-1.5 py-0.5 text-[10px] bg-white">
+                                {courseName}
+                              </span>
+                            </td>
+                            <td className="p-3 text-zinc-500">{sizeKb}</td>
+                            <td className="p-3">
+                              <span className="inline-flex items-center gap-1 text-[10px] border border-black bg-black text-white px-1.5 py-0.5">
+                                <CheckCircle2 className="w-2.5 h-2.5" />
+                                {doc.status || 'pronto'}
+                              </span>
+                            </td>
+                            <td className="p-3 text-right">
+                              <Link
+                                href={`/chat?doc=${doc.id}`}
+                                className="border border-black bg-white hover:bg-black hover:text-white px-2 py-1 text-[10px] font-bold uppercase transition-colors"
+                              >
+                                Interroga
+                              </Link>
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+
+                  {/* Mobile Card List View (Zero Drift) */}
+                  <div className="md:hidden divide-y divide-zinc-200">
                     {recentDocs.map((doc) => {
                       const courseName = doc.course_id ? (coursesMap.get(doc.course_id) || 'Generale') : 'Generale'
                       const sizeKb = doc.size_bytes ? `${Math.round(doc.size_bytes / 1024)} KB` : 'N/D'
 
                       return (
-                        <tr key={doc.id} className="border-b border-zinc-200 hover:bg-zinc-50 transition-colors">
-                          <td className="p-3 font-bold text-black flex items-center gap-2">
-                            <span className="w-1.5 h-1.5 bg-black"></span>
-                            <span className="truncate max-w-[180px] sm:max-w-[220px]" title={doc.title}>
-                              {doc.title}
-                            </span>
-                          </td>
-                          <td className="p-3 text-zinc-600">
-                            <span className="border border-zinc-300 px-1.5 py-0.5 text-[10px] bg-white">
-                              {courseName}
-                            </span>
-                          </td>
-                          <td className="p-3 text-zinc-500">{sizeKb}</td>
-                          <td className="p-3">
-                            <span className="inline-flex items-center gap-1 text-[10px] border border-black bg-black text-white px-1.5 py-0.5">
-                              <CheckCircle2 className="w-2.5 h-2.5" />
-                              {doc.status || 'pronto'}
-                            </span>
-                          </td>
-                          <td className="p-3 text-right">
-                            <Link
-                              href={`/chat?doc=${doc.id}`}
-                              className="border border-black bg-white hover:bg-black hover:text-white px-2 py-1 text-[10px] font-bold uppercase transition-colors"
-                            >
-                              Interroga
-                            </Link>
-                          </td>
-                        </tr>
+                        <div key={doc.id} className="p-3 flex items-center justify-between gap-2">
+                          <div className="min-w-0 flex-1">
+                            <p className="font-bold text-xs truncate text-black">{doc.title}</p>
+                            <div className="flex items-center gap-2 mt-1 text-[10px] text-zinc-500">
+                              <span className="border border-zinc-200 px-1 bg-zinc-50">{courseName}</span>
+                              <span>{sizeKb}</span>
+                            </div>
+                          </div>
+                          <Link
+                            href={`/chat?doc=${doc.id}`}
+                            className="border border-black bg-white hover:bg-black hover:text-white px-2 py-1 text-[10px] font-bold uppercase shrink-0 transition-colors shadow-[1px_1px_0px_rgba(0,0,0,1)]"
+                          >
+                            Interroga
+                          </Link>
+                        </div>
                       )
                     })}
-                  </tbody>
-                </table>
+                  </div>
+                </>
               ) : (
                 <div className="p-8 text-center font-mono">
                   <p className="text-zinc-500 text-xs mb-3">Nessun documento caricato.</p>
@@ -300,8 +330,8 @@ export default async function DashboardPage() {
           </div>
         </div>
 
-        {/* Quick Launch Action Tiles */}
-        <div className="border border-black bg-white">
+        {/* Quick Launch Action Tiles (Nascosto su mobile) */}
+        <div className="hidden sm:block border border-black bg-white">
           <div className="border-b border-black px-4 py-2.5 bg-zinc-50">
             <h3 className="text-xs font-mono uppercase tracking-wider font-bold text-black">
               Sezioni Rapide

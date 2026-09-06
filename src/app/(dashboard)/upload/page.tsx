@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import { 
   UploadCloud, File as FileIcon, X, Loader2, Youtube, 
-  BookOpen, Folder, Sparkles, CheckCircle2, AlertCircle, ArrowRight
+  BookOpen, Folder, Sparkles, Check, AlertCircle, ArrowRight
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
@@ -33,7 +33,6 @@ export default function UploadPage() {
   const [isCheckingYt, setIsCheckingYt] = useState(false)
 
   // Target Context (Course / Folder)
-  const [contextSelection, setContextSelection] = useState<ContextSelection>({ type: 'all', name: 'Tutti i materiali' })
   const [courses, setCourses] = useState<Array<{ id: string; name: string }>>([])
   const [selectedCourseId, setSelectedCourseId] = useState<string>('')
 
@@ -224,72 +223,74 @@ export default function UploadPage() {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto bg-slate-50/50 p-8 select-none">
+    <div className="flex-1 overflow-y-auto bg-white p-4 sm:p-8 select-none text-black font-sans min-h-screen">
       <div className="max-w-2xl mx-auto space-y-6">
         {/* Page Header */}
-        <div>
-          <h1 className="text-xl font-bold text-slate-900">Carica Materiale di Studio</h1>
-          <p className="text-xs text-slate-500 mt-1">
-            Importa slide, PDF, appunti o lezioni da YouTube per abilitare la Chat AI, il Tutor e le Flashcard.
+        <div className="border-b border-black pb-4 font-mono">
+          <h1 className="text-base sm:text-lg font-bold uppercase tracking-wider text-black">
+            Carica Materiale // Knowledge Base
+          </h1>
+          <p className="text-xs text-zinc-500 mt-1 font-sans">
+            Importa slide, PDF, dispense o lezioni da YouTube per abilitare la Chat AI, il Docente Virtuale e le Flashcard.
           </p>
         </div>
 
         {/* Notifications */}
         {errorMsg && (
-          <div className="p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl text-xs flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 shrink-0 text-red-600" />
-            <span>{errorMsg}</span>
+          <div className="p-3 border-2 border-black bg-white shadow-[3px_3px_0px_rgba(0,0,0,1)] text-xs font-mono font-bold uppercase text-black flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 shrink-0 text-black" />
+            <span>[ERRORE]: {errorMsg}</span>
           </div>
         )}
 
         {successMsg && (
-          <div className="p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
+          <div className="p-3 border-2 border-black bg-black text-white shadow-[3px_3px_0px_rgba(0,0,0,1)] text-xs font-mono font-bold uppercase flex items-center gap-2">
+            <Check className="w-4 h-4 shrink-0 text-white" />
             <span>{successMsg}</span>
           </div>
         )}
 
         {/* Ingestion Type Switcher (File vs YouTube) */}
-        <div className="flex bg-white p-1.5 rounded-2xl border border-slate-200 shadow-2xs">
+        <div className="flex border border-black p-0.5 bg-zinc-100 font-mono text-xs">
           <button
             type="button"
             onClick={() => { setIngestionType('file'); setErrorMsg('') }}
-            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold transition-all ${
+            className={`flex-1 flex items-center justify-center gap-2 py-2 font-bold uppercase transition-colors ${
               ingestionType === 'file'
-                ? 'bg-blue-600 text-white shadow-xs'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                ? 'bg-black text-white shadow-[2px_2px_0px_rgba(0,0,0,1)]'
+                : 'text-zinc-600 hover:text-black'
             }`}
           >
             <FileIcon className="w-4 h-4" />
-            File dal Computer / Dispositivo
+            <span>File dal Dispositivo</span>
           </button>
 
           <button
             type="button"
             onClick={() => { setIngestionType('youtube'); setErrorMsg('') }}
-            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold transition-all ${
+            className={`flex-1 flex items-center justify-center gap-2 py-2 font-bold uppercase transition-colors ${
               ingestionType === 'youtube'
-                ? 'bg-red-600 text-white shadow-xs'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                ? 'bg-black text-white shadow-[2px_2px_0px_rgba(0,0,0,1)]'
+                : 'text-zinc-600 hover:text-black'
             }`}
           >
             <Youtube className="w-4 h-4" />
-            Video / Lezione da YouTube
+            <span>Video da YouTube</span>
           </button>
         </div>
 
         {/* Form Card */}
-        <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs space-y-5">
+        <div className="bg-white border-2 border-black p-5 sm:p-6 shadow-[6px_6px_0px_rgba(0,0,0,1)] font-mono space-y-5">
           {/* Target Course Selector */}
           <div>
-            <label className="text-xs font-bold text-slate-800 block mb-1.5 flex items-center gap-1.5">
-              <BookOpen className="w-3.5 h-3.5 text-blue-600" />
+            <label className="text-xs font-bold uppercase tracking-wider text-black block mb-1.5 flex items-center gap-1.5">
+              <BookOpen className="w-3.5 h-3.5 text-black" />
               Assegna al Corso di Studio
             </label>
             <select
               value={selectedCourseId}
               onChange={e => setSelectedCourseId(e.target.value)}
-              className="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-xs bg-white text-slate-800 outline-none focus:border-blue-500"
+              className="w-full border border-black px-3 py-2 text-xs bg-white text-black outline-none focus:bg-zinc-50 font-mono"
             >
               {courses.map(c => (
                 <option key={c.id} value={c.id}>{c.name}</option>
@@ -300,15 +301,15 @@ export default function UploadPage() {
 
           {/* Option A: File Upload */}
           {ingestionType === 'file' && (
-            <div className="space-y-4">
+            <div className="space-y-4 font-mono">
               {!file ? (
                 <div
                   onDragEnter={handleDrag}
                   onDragLeave={handleDrag}
                   onDragOver={handleDrag}
                   onDrop={handleDrop}
-                  className={`border-2 border-dashed rounded-2xl p-10 text-center transition-all cursor-pointer ${
-                    dragActive ? 'border-blue-500 bg-blue-50/50' : 'border-slate-300 hover:border-slate-400 bg-slate-50/30'
+                  className={`border-2 border-dashed border-black p-8 sm:p-10 text-center transition-colors cursor-pointer ${
+                    dragActive ? 'bg-zinc-200' : 'bg-zinc-50 hover:bg-zinc-100'
                   }`}
                 >
                   <input
@@ -319,32 +320,32 @@ export default function UploadPage() {
                     accept=".pdf,.doc,.docx,.txt,.md,.png,.jpg,.jpeg,.mp3,.m4a,.wav"
                   />
                   <label htmlFor="file-input" className="cursor-pointer flex flex-col items-center">
-                    <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mb-3">
+                    <div className="w-12 h-12 border border-black bg-black text-white flex items-center justify-center mb-3">
                       <UploadCloud className="w-6 h-6" />
                     </div>
-                    <p className="text-xs font-bold text-slate-800">
+                    <p className="text-xs font-bold uppercase tracking-wider text-black">
                       Trascina qui il file oppure clicca per sfogliare
                     </p>
-                    <p className="text-[11px] text-slate-400 mt-1">
+                    <p className="text-[11px] text-zinc-500 mt-1 font-sans">
                       Supporta PDF, dispense, slide, documenti di testo, immagini e registrazioni audio
                     </p>
                   </label>
                 </div>
               ) : (
-                <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2.5 bg-blue-100 text-blue-700 rounded-xl">
-                      <FileIcon className="w-5 h-5" />
+                <div className="p-3 border border-black bg-zinc-50 flex items-center justify-between">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="p-2 border border-black bg-white text-black shrink-0">
+                      <FileIcon className="w-4 h-4" />
                     </div>
-                    <div>
-                      <p className="text-xs font-bold text-slate-900 truncate max-w-sm">{file.name}</p>
-                      <p className="text-[11px] text-slate-500">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold uppercase text-black truncate">{file.name}</p>
+                      <p className="text-[10px] text-zinc-500 font-mono">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
                     </div>
                   </div>
                   <button
                     onClick={() => setFile(null)}
                     disabled={isUploading}
-                    className="p-1.5 text-slate-400 hover:text-red-600 rounded-lg transition-colors"
+                    className="p-1 border border-black text-black hover:bg-black hover:text-white transition-colors"
                   >
                     <X className="w-4 h-4" />
                   </button>
@@ -354,17 +355,17 @@ export default function UploadPage() {
               <button
                 onClick={handleUploadFile}
                 disabled={!file || isUploading}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 disabled:opacity-40 shadow-xs"
+                className="w-full bg-black hover:bg-zinc-800 text-white py-3 text-xs font-bold uppercase tracking-wider transition-colors flex items-center justify-center gap-2 disabled:opacity-40 border border-black shadow-[3px_3px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px]"
               >
                 {isUploading ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    Caricamento e analisi in corso...
+                    <span>Caricamento e analisi in corso...</span>
                   </>
                 ) : (
                   <>
                     <UploadCloud className="w-4 h-4" />
-                    Carica Documento
+                    <span>Carica Documento</span>
                   </>
                 )}
               </button>
@@ -373,9 +374,9 @@ export default function UploadPage() {
 
           {/* Option B: YouTube Ingestion */}
           {ingestionType === 'youtube' && (
-            <div className="space-y-4">
+            <div className="space-y-4 font-mono">
               <div>
-                <label className="text-xs font-bold text-slate-800 block mb-1">
+                <label className="text-xs font-bold uppercase tracking-wider text-black block mb-1">
                   Incolla URL Video o Lezione YouTube
                 </label>
                 <div className="relative">
@@ -384,38 +385,37 @@ export default function UploadPage() {
                     placeholder="https://www.youtube.com/watch?v=... o https://youtu.be/..."
                     value={youtubeUrl}
                     onChange={e => setYoutubeUrl(e.target.value)}
-                    className="w-full border border-slate-300 rounded-xl pl-9 pr-3 py-2.5 text-xs outline-none focus:border-red-500 bg-white"
+                    className="w-full border border-black px-3 py-2 text-xs outline-none focus:bg-zinc-50 bg-white font-mono"
                   />
-                  <Youtube className="w-4 h-4 text-red-500 absolute left-3 top-3" />
                 </div>
               </div>
 
               {isCheckingYt && (
-                <div className="flex items-center gap-2 text-xs text-slate-500 py-1">
-                  <Loader2 className="w-3.5 h-3.5 animate-spin text-red-500" />
-                  Verifica video in corso...
+                <div className="flex items-center gap-2 text-xs text-zinc-500 py-1">
+                  <Loader2 className="w-3.5 h-3.5 animate-spin text-black" />
+                  <span>Verifica video in corso...</span>
                 </div>
               )}
 
               {ytPreview && (
-                <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl flex items-start gap-4">
+                <div className="p-3 border border-black bg-zinc-50 flex items-start gap-3">
                   {ytPreview.thumbnailUrl && (
                     <img
                       src={ytPreview.thumbnailUrl}
                       alt="Anteprima"
-                      className="w-24 h-16 object-cover rounded-lg shrink-0 border border-slate-200"
+                      className="w-24 h-16 object-cover border border-black shrink-0"
                     />
                   )}
                   <div className="flex-1 min-w-0">
-                    <span className="text-[10px] font-bold text-red-600 uppercase tracking-wider">Video Rilevato</span>
-                    <p className="text-xs font-bold text-slate-900 truncate mt-0.5">{ytPreview.title}</p>
-                    <p className="text-[11px] text-slate-500 mt-0.5">Canale: {ytPreview.author}</p>
+                    <span className="text-[10px] font-bold uppercase bg-black text-white px-1.5 py-0.5">Video Rilevato</span>
+                    <p className="text-xs font-bold uppercase text-black truncate mt-1">{ytPreview.title}</p>
+                    <p className="text-[10px] text-zinc-500 mt-0.5">Canale: {ytPreview.author}</p>
                   </div>
                 </div>
               )}
 
               <div>
-                <label className="text-xs font-semibold text-slate-700 block mb-1">
+                <label className="text-xs font-bold uppercase tracking-wider text-black block mb-1">
                   Titolo Personalizzato (Opzionale)
                 </label>
                 <input
@@ -423,13 +423,13 @@ export default function UploadPage() {
                   placeholder="Es. Lezione 4 - Analisi Matematica: Limiti e Continuità"
                   value={customTitle}
                   onChange={e => setCustomTitle(e.target.value)}
-                  className="w-full border border-slate-300 rounded-xl px-3 py-2 text-xs outline-none focus:border-red-500 bg-white"
+                  className="w-full border border-black px-3 py-2 text-xs outline-none focus:bg-zinc-50 bg-white font-mono"
                 />
               </div>
 
-              <div className="p-3.5 bg-red-50/60 border border-red-200 rounded-2xl text-[11px] text-red-950 leading-relaxed">
-                <span className="font-bold flex items-center gap-1 mb-0.5">
-                  <Sparkles className="w-3.5 h-3.5 text-red-600" />
+              <div className="p-3 border border-black bg-zinc-100 text-[11px] text-black font-sans leading-relaxed">
+                <span className="font-bold font-mono uppercase flex items-center gap-1 mb-0.5">
+                  <Sparkles className="w-3.5 h-3.5 text-black" />
                   Elaborazione Automatica con AI:
                 </span>
                 Il video verrà trascritto o sintetizzato in dispense didattiche strutturate e indicizzato nel database vettoriale per essere interrogato istantaneamente da Chat, Voce e Tutor.
@@ -438,17 +438,17 @@ export default function UploadPage() {
               <button
                 onClick={handleImportYouTube}
                 disabled={!youtubeUrl.trim() || isUploading}
-                className="w-full bg-red-600 hover:bg-red-700 text-white py-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 disabled:opacity-40 shadow-xs"
+                className="w-full bg-black hover:bg-zinc-800 text-white py-3 text-xs font-bold uppercase tracking-wider transition-colors flex items-center justify-center gap-2 disabled:opacity-40 border border-black shadow-[3px_3px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px]"
               >
                 {isUploading ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    Estrazione e indicizzazione video in corso...
+                    <span>Estrazione e indicizzazione video in corso...</span>
                   </>
                 ) : (
                   <>
                     <Youtube className="w-4 h-4" />
-                    Importa Video nella Knowledge Base
+                    <span>Importa Video nella Knowledge Base</span>
                   </>
                 )}
               </button>

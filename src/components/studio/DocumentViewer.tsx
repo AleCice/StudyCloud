@@ -3,11 +3,11 @@
 import React, { useState } from 'react'
 import { 
   Printer, Download, BookOpen, Layers, CheckSquare, 
-  ListTree, FileText, ChevronRight, Copy, Check, FileDown
+  ListTree, FileText, ChevronRight, Copy, Check, FileDown, Loader2
 } from 'lucide-react'
 import { DocumentContent } from '@/app/(dashboard)/studio/actions'
 import MarkdownRenderer from '@/components/ui/MarkdownRenderer'
-import { exportDocumentToDocx, exportDocumentToMarkdown, exportDocumentToPdf } from '@/lib/studio/export'
+import { exportDocumentToMarkdown, exportDocumentToDocx } from '@/lib/studio/export'
 
 interface Props {
   content: DocumentContent
@@ -20,18 +20,9 @@ export default function DocumentViewer({ content, title, courseName, subtype }: 
   const [copied, setCopied] = useState(false)
   const [viewMode, setViewMode] = useState<'a4' | 'fluid'>('a4')
   const [exportingDocx, setExportingDocx] = useState(false)
-  const [exportingPdf, setExportingPdf] = useState(false)
 
-  const handlePdfExport = async () => {
-    setExportingPdf(true)
-    try {
-      await exportDocumentToPdf({ title, content, courseName })
-    } catch (err) {
-      console.error("Errore export PDF:", err)
-      alert("Impossibile generare il PDF.")
-    } finally {
-      setExportingPdf(false)
-    }
+  const handleMarkdownExport = () => {
+    exportDocumentToMarkdown({ title, content })
   }
 
   const handleDocxExport = async () => {
@@ -39,15 +30,11 @@ export default function DocumentViewer({ content, title, courseName, subtype }: 
     try {
       await exportDocumentToDocx({ title, content, courseName })
     } catch (err) {
-      console.error("Errore export DOCX:", err)
-      alert("Impossibile esportare il file DOCX.")
+      console.error("Errore esportazione DOCX:", err)
+      alert("Errore durante la generazione del file DOCX.")
     } finally {
       setExportingDocx(false)
     }
-  }
-
-  const handleMarkdownExport = () => {
-    exportDocumentToMarkdown({ title, content })
   }
 
   const handleCopyMarkdown = () => {
@@ -73,7 +60,7 @@ export default function DocumentViewer({ content, title, courseName, subtype }: 
           )}
         </div>
 
-        {/* Action Buttons: Esportazioni NATIVE */}
+        {/* Action Buttons: Esportazioni NATIVE Brutalist */}
         <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
           {/* Toggle Vista A4 / Fluido */}
           <div className="hidden lg:flex items-center border border-black p-0.5 bg-zinc-100 text-[10px]">
@@ -93,28 +80,27 @@ export default function DocumentViewer({ content, title, courseName, subtype }: 
             </button>
           </div>
 
-          {/* Export DOCX (Word) */}
+          {/* Stampa / Salva in PDF Vettoriale */}
+          <button
+            type="button"
+            onClick={() => window.print()}
+            className="flex items-center gap-1.5 px-3 py-1.5 border border-black bg-white hover:bg-black hover:text-white text-black font-bold uppercase transition-colors shadow-[2px_2px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px]"
+            title="Stampa o Salva in PDF vettoriale con testo selezionabile e formule nitide"
+          >
+            <Printer className="w-3.5 h-3.5" />
+            <span>Stampa / PDF</span>
+          </button>
+
+          {/* Export Word (.docx) Nativo */}
           <button
             type="button"
             onClick={handleDocxExport}
             disabled={exportingDocx}
-            className="flex items-center gap-1.5 px-3 py-1.5 border border-black bg-white hover:bg-zinc-100 text-black font-bold uppercase transition-colors shadow-[2px_2px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px]"
-            title="Scarica documento in formato Microsoft Word (.docx)"
+            className="flex items-center gap-1.5 px-3 py-1.5 border border-black bg-white hover:bg-black hover:text-white text-black font-bold uppercase transition-colors shadow-[2px_2px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] disabled:opacity-50"
+            title="Scarica documento Word nativo (.docx) con stili brutalist e formattazione OpenXML"
           >
-            <FileDown className="w-3.5 h-3.5" />
-            <span>{exportingDocx ? 'Word...' : 'DOCX'}</span>
-          </button>
-
-          {/* Export PDF (Generazione nativa da zero) */}
-          <button
-            type="button"
-            onClick={handlePdfExport}
-            disabled={exportingPdf}
-            className="flex items-center gap-1.5 px-3 py-1.5 border border-black bg-black hover:bg-zinc-800 text-white font-bold uppercase transition-colors shadow-[2px_2px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px]"
-            title="Genera documento PDF da zero con impaginazione reale"
-          >
-            <Printer className="w-3.5 h-3.5" />
-            <span>{exportingPdf ? 'PDF...' : 'PDF'}</span>
+            {exportingDocx ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileText className="w-3.5 h-3.5" />}
+            <span>.DOCX</span>
           </button>
 
           {/* Export Markdown (.md) */}
@@ -122,7 +108,7 @@ export default function DocumentViewer({ content, title, courseName, subtype }: 
             type="button"
             onClick={handleMarkdownExport}
             className="flex items-center gap-1.5 px-3 py-1.5 border border-black bg-white hover:bg-zinc-100 text-black font-bold uppercase transition-colors shadow-[2px_2px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px]"
-            title="Scarica file Markdown (.md)"
+            title="Scarica file Markdown sorgente (.md)"
           >
             <Download className="w-3.5 h-3.5" />
             <span>.MD</span>
@@ -150,7 +136,7 @@ export default function DocumentViewer({ content, title, courseName, subtype }: 
         <header className="border-b-2 border-black pb-5 mb-6">
           <div className="flex items-center justify-between mb-2 text-xs font-mono">
             <span className="font-bold tracking-widest uppercase text-zinc-500">
-              DOCUMENTO DIDATTICO
+              DOCUMENTO DIDATTICO // KNOWLEDGE BASE
             </span>
             <span className="text-zinc-500 uppercase font-bold">
               {courseName || 'Accademico'}
@@ -223,7 +209,7 @@ export default function DocumentViewer({ content, title, courseName, subtype }: 
         {/* Document Print Footer */}
         <footer className="border-t border-black/30 pt-4 mt-12 flex items-center justify-between text-[10px] font-mono text-zinc-500">
           <span>Generato con StudyCloud Studio</span>
-          <span>Design System Monocromatico</span>
+          <span>Design System Monocromatico // OpenXML Native</span>
         </footer>
       </div>
     </div>

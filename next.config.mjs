@@ -19,6 +19,30 @@ const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
   output: 'standalone',
+  webpack: (config, { isServer, webpack }) => {
+    config.infrastructureLogging = {
+      level: 'error',
+    }
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        path: false,
+        os: false,
+        crypto: false,
+        stream: false,
+        buffer: false,
+        'node:fs': false,
+        'node:path': false,
+      }
+      config.plugins.push(
+        new webpack.NormalModuleReplacementPlugin(/^node:/, (resource) => {
+          resource.request = resource.request.replace(/^node:/, '')
+        })
+      )
+    }
+    return config
+  },
   async headers() {
     return [
       {

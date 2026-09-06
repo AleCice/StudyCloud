@@ -39,11 +39,14 @@ export default function ChatInterface({ initialSessions }: Props) {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false)
   const [copiedId, setCopiedId] = useState<string | null>(null)
   const [showMobileSessions, setShowMobileSessions] = useState(false)
   
   // Model & Key State
   const [selectedModel, setSelectedModel] = useState<string>('gemini-3.5-flash-lite')
+  const [showModelMenu, setShowModelMenu] = useState<boolean>(false)
+  const modelMenuRef = useRef<HTMLDivElement>(null)
   const [showApiKeyModal, setShowApiKeyModal] = useState<boolean>(false)
   const [apiKeyInput, setApiKeyInput] = useState<string>('')
   const [savingKey, setSavingKey] = useState<boolean>(false)
@@ -58,8 +61,25 @@ export default function ChatInterface({ initialSessions }: Props) {
     if (m) setSelectedModel(m)
   }, [])
 
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (modelMenuRef.current && !modelMenuRef.current.contains(e.target as Node)) {
+        setShowModelMenu(false)
+      }
+    }
+    if (showModelMenu) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showModelMenu])
+
+  const currentModel = GEMINI_MODELS.find(m => m.id === selectedModel) || GEMINI_MODELS[0]
+
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const isAutoScrollEnabled = useRef(true)
+  const isSmoothScrollingRef = useRef(false)
   const [showScrollBottomBtn, setShowScrollBottomBtn] = useState(false)
   const [streamingMessageId, setStreamingMessageId] = useState<string | null>(null)
 
@@ -69,16 +89,25 @@ export default function ChatInterface({ initialSessions }: Props) {
   const targetTextRef = useRef('')
   const displayedTextRef = useRef('')
 
-  // Scroll istantaneo stabile senza conflitti di animazione
+  // Scroll graduale fluido o istantaneo
   const scrollToBottom = (behavior: 'auto' | 'smooth' = 'auto') => {
     if (!scrollContainerRef.current) return
     if (behavior === 'auto') {
       scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight
     } else {
+      isSmoothScrollingRef.current = true
       scrollContainerRef.current.scrollTo({
         top: scrollContainerRef.current.scrollHeight,
         behavior: 'smooth'
       })
+      setTimeout(() => {
+        isSmoothScrollingRef.current = false
+        if (scrollContainerRef.current) {
+          const { scrollTop, scrollHeight, clientHeight } = scrollContainerRef.current
+          const distanceFromBottom = scrollHeight - scrollTop - clientHeight
+          setShowScrollBottomBtn(distanceFromBottom >= 60)
+        }
+      }, 700)
     }
   }
 
@@ -88,7 +117,9 @@ export default function ChatInterface({ initialSessions }: Props) {
     const distanceFromBottom = scrollHeight - scrollTop - clientHeight
     const isNearBottom = distanceFromBottom < 60
     isAutoScrollEnabled.current = isNearBottom
-    setShowScrollBottomBtn(!isNearBottom)
+    if (!isSmoothScrollingRef.current) {
+      setShowScrollBottomBtn(!isNearBottom)
+    }
   }
 
   // Cleanup typewriter e fetch all'unmount
@@ -105,12 +136,22 @@ export default function ChatInterface({ initialSessions }: Props) {
 
   // Quando si cambia chat, carica i messaggi e fa scroll istantaneo in basso
   useEffect(() => {
+    let isCancelled = false
     if (activeId) {
-      getChatMessages(activeId).then(h => {
-        setMessages(h as ChatMessage[])
-        isAutoScrollEnabled.current = true
-        setTimeout(() => scrollToBottom('auto'), 40)
-      })
+      setIsLoadingHistory(true)
+      getChatMessages(activeId)
+        .then(h => {
+          if (isCancelled) return
+          setMessages(h as ChatMessage[])
+          setIsLoadingHistory(false)
+          isAutoScrollEnabled.current = true
+          setTimeout(() => scrollToBottom('auto'), 40)
+        })
+        .catch(err => {
+          console.error('Errore nel caricamento della chat passata:', err)
+          if (!isCancelled) setIsLoadingHistory(false)
+        })
+
       const session = sessions.find(s => s.id === activeId)
       if (session?.context_filter) {
         setContextSelection(session.context_filter)
@@ -119,6 +160,11 @@ export default function ChatInterface({ initialSessions }: Props) {
       }
     } else {
       setMessages([])
+      setIsLoadingHistory(false)
+    }
+
+    return () => {
+      isCancelled = true
     }
   }, [activeId])
 
@@ -132,6 +178,7 @@ export default function ChatInterface({ initialSessions }: Props) {
   }
 
   const newChat = async (title?: string) => {
+    setIsLoadingHistory(false)
     const s = await createChatSession(title || 'Nuova conversazione', contextSelection)
     setSessions([s, ...sessions])
     setActiveId(s.id)
@@ -354,15 +401,19 @@ export default function ChatInterface({ initialSessions }: Props) {
               }`}
             >
               <span className="truncate flex-1">{s.title}</span>
-              <button
-                onClick={e => { e.stopPropagation(); deleteChat(s.id) }}
-                className={`opacity-0 group-hover:opacity-100 p-1 transition-all ${
-                  activeId === s.id ? 'text-zinc-300 hover:text-white' : 'text-zinc-500 hover:text-black'
-                }`}
-                title="Elimina conversazione"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-              </button>
+              {activeId === s.id && isLoadingHistory ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0 ml-1 text-zinc-400" />
+              ) : (
+                <button
+                  onClick={e => { e.stopPropagation(); deleteChat(s.id) }}
+                  className={`opacity-0 group-hover:opacity-100 p-1 transition-all ${
+                    activeId === s.id ? 'text-zinc-300 hover:text-white' : 'text-zinc-500 hover:text-black'
+                  }`}
+                  title="Elimina conversazione"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
           ))}
         </div>
@@ -405,12 +456,16 @@ export default function ChatInterface({ initialSessions }: Props) {
                   }`}
                 >
                   <span className="truncate flex-1">{s.title}</span>
-                  <button
-                    onClick={e => { e.stopPropagation(); deleteChat(s.id) }}
-                    className="p-1 text-zinc-400 hover:text-black"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
+                  {activeId === s.id && isLoadingHistory ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0 ml-1 text-zinc-400" />
+                  ) : (
+                    <button
+                      onClick={e => { e.stopPropagation(); deleteChat(s.id) }}
+                      className="p-1 text-zinc-400 hover:text-black"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                 </div>
               ))}
             </div>
@@ -438,26 +493,75 @@ export default function ChatInterface({ initialSessions }: Props) {
             </div>
           </div>
 
-          <div className="flex items-center gap-2 flex-wrap justify-end">
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap justify-end">
             {/* Model Selector Dropdown */}
-            <div className="flex items-center gap-1 bg-white border border-black px-2 py-1 text-xs font-mono">
-              <Sparkles className="w-3 h-3 text-black shrink-0" />
-              <select
-                value={selectedModel}
-                onChange={e => {
-                  const m = e.target.value
-                  setSelectedModel(m)
-                  setSelectedGeminiModel(m)
-                }}
-                className="bg-transparent text-black font-bold outline-none cursor-pointer text-xs pr-1 max-w-[110px] sm:max-w-none truncate"
-                title="Seleziona modello Google Gemini"
+            <div className="relative" ref={modelMenuRef}>
+              {/* Desktop Trigger Button */}
+              <button
+                type="button"
+                onClick={() => setShowModelMenu(prev => !prev)}
+                className="hidden sm:flex items-center gap-1.5 bg-white border border-black px-2.5 py-1 text-xs font-mono font-bold text-black hover:bg-zinc-100 transition-colors shadow-[1px_1px_0px_rgba(0,0,0,1)] max-w-[220px]"
+                title="Seleziona modello AI Google Gemini"
               >
-                {GEMINI_MODELS.map(m => (
-                  <option key={m.id} value={m.id}>
-                    {m.name} ({m.badge})
-                  </option>
-                ))}
-              </select>
+                <Sparkles className="w-3.5 h-3.5 text-black shrink-0" />
+                <span className="truncate font-mono">{currentModel.name}</span>
+                <ChevronDown className="w-3 h-3 text-black shrink-0 ml-0.5" />
+              </button>
+
+              {/* Mobile Square Trigger Button (identico a export button) */}
+              <button
+                type="button"
+                onClick={() => setShowModelMenu(prev => !prev)}
+                className="sm:hidden p-1.5 border border-black bg-white hover:bg-black hover:text-white transition-colors text-black flex items-center justify-center shadow-[1px_1px_0px_rgba(0,0,0,1)]"
+                title={`Modello: ${currentModel.name}`}
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+              </button>
+
+              {/* Dropdown Menu con Micro-descrizione e Novità */}
+              {showModelMenu && (
+                <div className="absolute right-0 top-full mt-1.5 z-40 w-72 sm:w-80 bg-white border-2 border-black shadow-[4px_4px_0px_rgba(0,0,0,1)] p-1.5 font-mono animate-in fade-in zoom-in-95 duration-100">
+                  <div className="px-2 py-1.5 border-b border-black mb-1 bg-zinc-50 flex items-center justify-between">
+                    <span className="text-[10px] uppercase font-bold tracking-wider text-black">Modello AI Google Gemini</span>
+                    <span className="text-[9px] text-zinc-500 font-mono">1M Context</span>
+                  </div>
+                  <div className="space-y-1 max-h-72 overflow-y-auto">
+                    {GEMINI_MODELS.map(m => {
+                      const isSelected = m.id === selectedModel
+                      return (
+                        <button
+                          key={m.id}
+                          type="button"
+                          onClick={() => {
+                            setSelectedModel(m.id)
+                            setSelectedGeminiModel(m.id)
+                            setShowModelMenu(false)
+                          }}
+                          className={`w-full text-left p-2 border transition-colors ${
+                            isSelected 
+                              ? 'bg-black text-white border-black' 
+                              : 'bg-white text-black border-zinc-200 hover:border-black hover:bg-zinc-50'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between gap-1 mb-1">
+                            <span className="font-bold text-xs">{m.name}</span>
+                            <span className={`text-[9px] uppercase px-1 py-0.5 border font-mono ${
+                              isSelected ? 'border-white text-white' : 'border-black text-black bg-zinc-100'
+                            }`}>
+                              {m.badge}
+                            </span>
+                          </div>
+                          <p className={`text-[10px] leading-tight line-clamp-2 ${
+                            isSelected ? 'text-zinc-300' : 'text-zinc-600'
+                          }`}>
+                            {m.description}
+                          </p>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Context Selector (Corsi, Cartelle, Sottocartelle, File) */}
@@ -470,7 +574,7 @@ export default function ChatInterface({ initialSessions }: Props) {
             {messages.length > 0 && (
               <button
                 onClick={exportChat}
-                className="p-1.5 border border-black bg-white hover:bg-black hover:text-white transition-colors text-black"
+                className="p-1.5 border border-black bg-white hover:bg-black hover:text-white transition-colors text-black shadow-[1px_1px_0px_rgba(0,0,0,1)]"
                 title="Esporta chat in Markdown"
               >
                 <Download className="w-3.5 h-3.5" />
@@ -483,12 +587,24 @@ export default function ChatInterface({ initialSessions }: Props) {
         <div 
           ref={scrollContainerRef}
           onScroll={handleScroll}
-          className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5 relative"
+          className="flex-1 overflow-y-auto p-2.5 sm:p-6 space-y-3 sm:space-y-5 relative"
         >
-          {messages.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-center p-8 font-mono">
-              <div className="border border-black p-3 bg-zinc-50 mb-3">
-                <MessageSquare className="w-8 h-8 text-black" />
+          {isLoadingHistory ? (
+            <div className="h-full min-h-[260px] flex flex-col items-center justify-center text-center p-6 font-mono animate-in fade-in duration-200">
+              <div className="border border-black p-3 bg-white shadow-[2px_2px_0px_rgba(0,0,0,1)] flex items-center gap-2.5 mb-2">
+                <Loader2 className="w-4 h-4 text-black animate-spin" />
+                <span className="text-xs font-bold uppercase tracking-wider text-black">
+                  Caricamento chat in corso...
+                </span>
+              </div>
+              <p className="text-[10px] sm:text-[11px] text-zinc-500 max-w-xs">
+                Recupero dei messaggi precedenti e del contesto attivo...
+              </p>
+            </div>
+          ) : messages.length === 0 ? (
+            <div className="h-full flex flex-col items-center justify-center text-center p-6 font-mono">
+              <div className="border border-black p-2.5 bg-zinc-50 mb-2.5">
+                <MessageSquare className="w-6 h-6 sm:w-8 sm:h-8 text-black" />
               </div>
               <p className="text-xs font-bold uppercase tracking-wider text-black mb-1">
                 Inizia una nuova sessione di studio
@@ -501,16 +617,16 @@ export default function ChatInterface({ initialSessions }: Props) {
             messages.map(m => (
               <div
                 key={m.id}
-                className={`flex gap-3 max-w-3xl ${m.role === 'user' ? 'ml-auto justify-end' : 'mr-auto justify-start'}`}
+                className={`flex gap-1.5 sm:gap-3 max-w-full sm:max-w-3xl ${m.role === 'user' ? 'ml-auto justify-end' : 'mr-auto justify-start'}`}
               >
                 {m.role === 'assistant' && (
-                  <div className="w-7 h-7 bg-black text-white flex items-center justify-center shrink-0 text-[10px] font-mono font-bold border border-black">
+                  <div className="w-5 h-5 sm:w-7 sm:h-7 bg-black text-white flex items-center justify-center shrink-0 text-[8px] sm:text-[10px] font-mono font-bold border border-black mt-0.5">
                     AI
                   </div>
                 )}
 
                 <div
-                  className={`relative group px-4 py-3 text-[13px] leading-relaxed max-w-[88%] sm:max-w-[85%] border border-black ${
+                  className={`relative group px-2.5 py-1.5 sm:px-4 sm:py-3 text-[11px] sm:text-[13px] leading-snug sm:leading-relaxed max-w-[78%] sm:max-w-[82%] border border-black ${
                     m.role === 'user'
                       ? 'bg-black text-white'
                       : 'bg-white text-black shadow-[2px_2px_0px_rgba(0,0,0,1)]'
@@ -559,10 +675,10 @@ export default function ChatInterface({ initialSessions }: Props) {
                 type="button"
                 onClick={() => {
                   isAutoScrollEnabled.current = true
-                  scrollToBottom('auto')
                   setShowScrollBottomBtn(false)
+                  scrollToBottom('smooth')
                 }}
-                className="pointer-events-auto flex items-center gap-1.5 bg-white text-black border border-black shadow-[2px_2px_0px_rgba(0,0,0,1)] px-3 py-1.5 text-xs font-mono font-bold uppercase transition-all hover:bg-black hover:text-white"
+                className="pointer-events-auto flex items-center gap-1.5 bg-white text-black border border-black shadow-[2px_2px_0px_rgba(0,0,0,1)] px-3 py-1.5 text-[11px] font-mono font-bold uppercase transition-all hover:bg-black hover:text-white active:translate-y-0.5"
               >
                 <ChevronDown className="w-3.5 h-3.5" />
                 <span>Scorri in basso</span>
@@ -571,9 +687,9 @@ export default function ChatInterface({ initialSessions }: Props) {
           )}
         </div>
 
-        {/* Input Form */}
-        <div className="p-4 border-t border-black bg-white">
-          <form onSubmit={send} className="max-w-3xl mx-auto flex items-end gap-2 bg-white border border-black p-2 transition-colors focus-within:ring-1 focus-within:ring-black">
+        {/* Input Form Compatto */}
+        <div className="p-2 sm:p-4 border-t border-black bg-white">
+          <form onSubmit={send} className="max-w-3xl mx-auto flex items-end gap-1.5 sm:gap-2 bg-white border border-black p-1.5 sm:p-2 transition-colors focus-within:ring-1 focus-within:ring-black">
             <textarea
               ref={textareaRef}
               value={input}
@@ -581,7 +697,7 @@ export default function ChatInterface({ initialSessions }: Props) {
               onKeyDown={handleKeyDown}
               placeholder="Chiedi qualcosa sui tuoi materiali..."
               rows={1}
-              className="flex-1 max-h-32 bg-transparent text-[13px] text-black placeholder-zinc-400 outline-none resize-none px-2 py-1.5 font-sans"
+              className="flex-1 max-h-28 bg-transparent text-[12px] sm:text-[13px] text-black placeholder-zinc-400 outline-none resize-none px-1.5 py-1 font-sans"
             />
 
             {/* Send / Stop Action */}
@@ -589,19 +705,19 @@ export default function ChatInterface({ initialSessions }: Props) {
               <button
                 type="button"
                 onClick={stop}
-                className="p-2 bg-black hover:bg-zinc-800 text-white border border-black transition-colors"
+                className="p-1.5 sm:p-2 bg-black hover:bg-zinc-800 text-white border border-black transition-colors"
                 title="Interrompi generazione"
               >
-                <Square className="w-4 h-4 fill-current" />
+                <Square className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-current" />
               </button>
             ) : (
               <button
                 type="submit"
                 disabled={!input.trim()}
-                className="p-2 bg-black hover:bg-zinc-800 disabled:opacity-40 text-white border border-black transition-colors"
+                className="p-1.5 sm:p-2 bg-black hover:bg-zinc-800 disabled:opacity-40 text-white border border-black transition-colors"
                 title="Invia messaggio"
               >
-                <Send className="w-4 h-4" />
+                <Send className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </button>
             )}
           </form>

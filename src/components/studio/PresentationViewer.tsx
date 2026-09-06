@@ -4,27 +4,27 @@ import React, { useState, useEffect, useRef } from 'react'
 import { 
   ChevronLeft, ChevronRight, Maximize2, Minimize2, Play, Pause, 
   RotateCcw, Clock, FileText, LayoutGrid, X, Sparkles, Layers, Quote,
-  FileDown, Printer
+  FileDown, Printer, Presentation, Loader2
 } from 'lucide-react'
 import { SlideItem, PresentationContent } from '@/app/(dashboard)/studio/actions'
 import MarkdownRenderer from '@/components/ui/MarkdownRenderer'
-import { exportPresentationToPptx, exportPresentationToPdf } from '@/lib/studio/export'
+import { exportPresentationToPptx } from '@/lib/studio/export'
 
 interface Props {
   content: PresentationContent
   title: string
+  courseName?: string
   onEditSlide?: (index: number) => void
   isEditable?: boolean
 }
 
-export default function PresentationViewer({ content, title, onEditSlide, isEditable = false }: Props) {
+export default function PresentationViewer({ content, title, courseName, onEditSlide, isEditable = false }: Props) {
   const slides = content.slides || []
   const [currentIndex, setCurrentIndex] = useState(0)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [showNotes, setShowNotes] = useState(false)
   const [showGrid, setShowGrid] = useState(false)
   const [exportingPptx, setExportingPptx] = useState(false)
-  const [exportingPdf, setExportingPdf] = useState(false)
   
   // Timer d'esame / Cronometro
   const [timerSeconds, setTimerSeconds] = useState(0)
@@ -33,30 +33,6 @@ export default function PresentationViewer({ content, title, onEditSlide, isEdit
   const containerRef = useRef<HTMLDivElement>(null)
 
   const currentSlide: SlideItem | undefined = slides[currentIndex]
-
-  const handlePptxExport = async () => {
-    setExportingPptx(true)
-    try {
-      await exportPresentationToPptx({ title, content })
-    } catch (err) {
-      console.error("Errore export PPTX:", err)
-      alert("Impossibile esportare in formato PPTX.")
-    } finally {
-      setExportingPptx(false)
-    }
-  }
-
-  const handlePdfExport = async () => {
-    setExportingPdf(true)
-    try {
-      await exportPresentationToPdf({ title, content })
-    } catch (err) {
-      console.error("Errore export PDF:", err)
-      alert("Impossibile generare il PDF delle slide.")
-    } finally {
-      setExportingPdf(false)
-    }
-  }
 
   // Navigazione tastiera (Frecce, Spazio, F per Fullscreen, Esc per Griglia/Note)
   useEffect(() => {
@@ -157,15 +133,137 @@ export default function PresentationViewer({ content, title, onEditSlide, isEdit
 
   const isInverted = currentSlide?.inverted
 
+  const renderSlideBody = (slide: SlideItem, inverted: boolean) => {
+    switch (slide.layout) {
+      case 'title':
+        return (
+          <div className="space-y-4 text-center max-w-3xl mx-auto">
+            <h2 className="text-3xl sm:text-5xl font-black font-mono uppercase tracking-tight leading-tight">
+              {slide.title}
+            </h2>
+            {slide.subtitle && (
+              <p className="text-sm sm:text-lg opacity-80 font-sans font-medium">
+                {slide.subtitle}
+              </p>
+            )}
+            <div className="w-16 h-1 bg-current mx-auto mt-6" />
+          </div>
+        )
+      case 'bullets':
+        return (
+          <div className="space-y-6">
+            <h2 className="text-2xl sm:text-4xl font-bold font-mono uppercase tracking-tight">
+              {slide.title}
+            </h2>
+            <ul className="space-y-3 sm:space-y-4 font-sans text-sm sm:text-lg">
+              {slide.bullets?.map((bullet, idx) => (
+                <li key={idx} className="flex items-start gap-3">
+                  <span className="w-2.5 h-2.5 bg-current mt-2 shrink-0" />
+                  <div className="flex-1">
+                    <MarkdownRenderer content={bullet} className="text-inherit" />
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )
+      case 'columns':
+        return (
+          <div className="space-y-5">
+            <h2 className="text-2xl sm:text-3xl font-bold font-mono uppercase tracking-tight">
+              {slide.title}
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 pt-2">
+              <div className={`p-4 sm:p-6 border border-current ${inverted ? 'bg-zinc-900' : 'bg-zinc-50'}`}>
+                <h3 className="text-xs font-mono font-bold uppercase tracking-wider mb-2 border-b border-current/30 pb-1">
+                  Analisi A
+                </h3>
+                <div className="text-xs sm:text-sm font-sans">
+                  <MarkdownRenderer content={slide.leftColumn || ''} className="text-inherit" />
+                </div>
+              </div>
+              <div className={`p-4 sm:p-6 border border-current ${inverted ? 'bg-zinc-900' : 'bg-zinc-50'}`}>
+                <h3 className="text-xs font-mono font-bold uppercase tracking-wider mb-2 border-b border-current/30 pb-1">
+                  Analisi B
+                </h3>
+                <div className="text-xs sm:text-sm font-sans">
+                  <MarkdownRenderer content={slide.rightColumn || ''} className="text-inherit" />
+                </div>
+              </div>
+            </div>
+          </div>
+        )
+      case 'formula':
+        return (
+          <div className="space-y-6">
+            <h2 className="text-2xl sm:text-3xl font-bold font-mono uppercase tracking-tight">
+              {slide.title}
+            </h2>
+            {slide.formula && (
+              <div className={`p-6 sm:p-8 border-2 border-current text-center my-4 ${inverted ? 'bg-zinc-900' : 'bg-zinc-50'}`}>
+                <MarkdownRenderer 
+                  content={
+                    slide.formula.trim().startsWith('$') || slide.formula.trim().startsWith('\\begin')
+                      ? slide.formula 
+                      : `$$\n${slide.formula}\n$$`
+                  } 
+                  className="text-lg sm:text-2xl font-bold" 
+                />
+              </div>
+            )}
+            {slide.bullets && slide.bullets.length > 0 && (
+              <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3 font-sans text-xs sm:text-sm">
+                {slide.bullets.map((b, idx) => (
+                  <li key={idx} className="flex items-start gap-2">
+                    <span className="w-1.5 h-1.5 bg-current mt-1.5 shrink-0" />
+                    <span>{b}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )
+      case 'code':
+        return (
+          <div className="space-y-4">
+            <h2 className="text-2xl sm:text-3xl font-bold font-mono uppercase tracking-tight">
+              {slide.title}
+            </h2>
+            <div className={`p-4 border border-current font-mono text-xs sm:text-sm overflow-x-auto ${inverted ? 'bg-zinc-950' : 'bg-zinc-100'}`}>
+              <pre className="text-inherit">
+                <code>{slide.code || slide.bullets?.join('\n')}</code>
+              </pre>
+            </div>
+          </div>
+        )
+      case 'quote':
+        return (
+          <div className="space-y-6 max-w-3xl mx-auto text-center py-4">
+            <Quote className="w-8 h-8 sm:w-12 sm:h-12 mx-auto opacity-30 stroke-[1.5]" />
+            <blockquote className="text-xl sm:text-3xl font-medium font-serif italic leading-relaxed">
+              &ldquo;{slide.quote || slide.title}&rdquo;
+            </blockquote>
+            {slide.quoteAuthor && (
+              <p className="text-xs sm:text-sm font-mono uppercase tracking-wider opacity-70">
+                — {slide.quoteAuthor}
+              </p>
+            )}
+          </div>
+        )
+      default:
+        return null
+    }
+  }
+
   return (
     <div 
       ref={containerRef}
-      className={`relative flex flex-col select-none border border-black transition-colors ${
+      className={`relative flex flex-col select-none border border-black transition-colors print:border-none print:shadow-none print:bg-white ${
         isFullscreen ? 'fixed inset-0 z-50 bg-black' : 'w-full bg-white shadow-[4px_4px_0px_rgba(0,0,0,1)]'
       }`}
     >
       {/* Top HUD Bar */}
-      <div className="h-10 border-b border-black bg-white flex items-center justify-between px-3 text-xs font-mono shrink-0 z-20 text-black">
+      <div className="h-10 border-b border-black bg-white flex items-center justify-between px-3 text-xs font-mono shrink-0 z-20 text-black print:hidden">
         <div className="flex items-center gap-3 min-w-0">
           <span className="font-bold uppercase tracking-wider truncate max-w-[200px] sm:max-w-xs">
             {title}
@@ -221,28 +319,37 @@ export default function PresentationViewer({ content, title, onEditSlide, isEdit
             </button>
           </div>
 
-          {/* Export PPTX */}
+          {/* Scarica PowerPoint .PPTX Nativo */}
           <button
             type="button"
-            onClick={handlePptxExport}
+            onClick={async () => {
+              setExportingPptx(true)
+              try {
+                await exportPresentationToPptx({ title, content, courseName })
+              } catch (err) {
+                console.error("Errore esportazione PPTX:", err)
+                alert("Errore durante la generazione delle slide PPTX.")
+              } finally {
+                setExportingPptx(false)
+              }
+            }}
             disabled={exportingPptx}
-            className="px-2 py-1 border border-black bg-white text-black hover:bg-zinc-100 text-[10px] font-bold uppercase transition-colors flex items-center gap-1 shadow-[1px_1px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px]"
-            title="Scarica presentazione in formato PowerPoint (.pptx)"
+            className="px-2.5 py-1 border border-black bg-white text-black hover:bg-black hover:text-white text-[10px] font-bold uppercase transition-colors flex items-center gap-1 shadow-[1px_1px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] disabled:opacity-50"
+            title="Scarica presentazione PowerPoint nativa (.pptx) modificabile con testo vettoriale"
           >
-            <FileDown className="w-3 h-3" />
-            <span className="hidden sm:inline">{exportingPptx ? 'Export...' : 'PPTX'}</span>
+            {exportingPptx ? <Loader2 className="w-3 h-3 animate-spin" /> : <Presentation className="w-3 h-3" />}
+            <span>.PPTX</span>
           </button>
 
-          {/* Export PDF (Generazione nativa da zero) */}
+          {/* Stampa / Salva Slide in PDF */}
           <button
             type="button"
-            onClick={handlePdfExport}
-            disabled={exportingPdf}
-            className="px-2 py-1 border border-black bg-black text-white hover:bg-zinc-800 text-[10px] font-bold uppercase transition-colors flex items-center gap-1 shadow-[1px_1px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px]"
-            title="Genera file PDF da zero con 1 pagina 16:9 per slide"
+            onClick={() => window.print()}
+            className="px-2 py-1 border border-black bg-white text-black hover:bg-black hover:text-white text-[10px] font-bold uppercase transition-colors flex items-center gap-1 shadow-[1px_1px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px]"
+            title="Stampa o Salva in PDF le slide 16:9 vettoriali tramite il motore di stampa del browser"
           >
             <Printer className="w-3 h-3" />
-            <span className="hidden sm:inline">{exportingPdf ? 'PDF...' : 'PDF'}</span>
+            <span className="hidden sm:inline">Stampa / PDF</span>
           </button>
 
           {/* Note Oratore Toggle */}
@@ -282,8 +389,8 @@ export default function PresentationViewer({ content, title, onEditSlide, isEdit
         </div>
       </div>
 
-      {/* Main Slide 16:9 Viewport */}
-      <div className="flex-1 relative flex items-center justify-center p-4 sm:p-8 overflow-hidden bg-zinc-100 min-h-[360px] sm:min-h-[500px]">
+      {/* Main Slide 16:9 Viewport (Nascosta durante la stampa PDF) */}
+      <div className="flex-1 relative flex items-center justify-center p-4 sm:p-8 overflow-hidden bg-zinc-100 min-h-[360px] sm:min-h-[500px] print:hidden">
         {/* Aspect Ratio 16:9 Box */}
         <div 
           className={`w-full max-w-5xl aspect-[16/9] border-2 border-black flex flex-col justify-between p-6 sm:p-12 transition-all relative overflow-hidden shadow-[6px_6px_0px_rgba(0,0,0,1)] ${
@@ -302,119 +409,7 @@ export default function PresentationViewer({ content, title, onEditSlide, isEdit
 
           {/* Body Slide in base al layout */}
           <div className="my-auto py-4">
-            {/* Layout 1: TITLE (Copertina o Transizione Monumentale) */}
-            {currentSlide.layout === 'title' && (
-              <div className="space-y-4 text-center max-w-3xl mx-auto">
-                <h2 className="text-3xl sm:text-5xl font-black font-mono uppercase tracking-tight leading-tight">
-                  {currentSlide.title}
-                </h2>
-                {currentSlide.subtitle && (
-                  <p className="text-sm sm:text-lg opacity-80 font-sans font-medium">
-                    {currentSlide.subtitle}
-                  </p>
-                )}
-                <div className="w-16 h-1 bg-current mx-auto mt-6" />
-              </div>
-            )}
-
-            {/* Layout 2: BULLETS (Punti Chiave Spigolosi) */}
-            {currentSlide.layout === 'bullets' && (
-              <div className="space-y-6">
-                <h2 className="text-2xl sm:text-4xl font-bold font-mono uppercase tracking-tight">
-                  {currentSlide.title}
-                </h2>
-                <ul className="space-y-3 sm:space-y-4 font-sans text-sm sm:text-lg">
-                  {currentSlide.bullets?.map((bullet, idx) => (
-                    <li key={idx} className="flex items-start gap-3">
-                      <span className="w-2.5 h-2.5 bg-current mt-2 shrink-0" />
-                      <div className="flex-1">
-                        <MarkdownRenderer content={bullet} className="text-inherit" />
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {/* Layout 3: COLUMNS (Confronto a 2 Colonne) */}
-            {currentSlide.layout === 'columns' && (
-              <div className="space-y-5">
-                <h2 className="text-2xl sm:text-3xl font-bold font-mono uppercase tracking-tight">
-                  {currentSlide.title}
-                </h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 pt-2">
-                  <div className={`p-4 sm:p-6 border border-current ${isInverted ? 'bg-zinc-900' : 'bg-zinc-50'}`}>
-                    <h3 className="text-xs font-mono font-bold uppercase tracking-wider mb-2 border-b border-current/30 pb-1">
-                      Analisi A
-                    </h3>
-                    <div className="text-xs sm:text-sm font-sans">
-                      <MarkdownRenderer content={currentSlide.leftColumn || ''} className="text-inherit" />
-                    </div>
-                  </div>
-                  <div className={`p-4 sm:p-6 border border-current ${isInverted ? 'bg-zinc-900' : 'bg-zinc-50'}`}>
-                    <h3 className="text-xs font-mono font-bold uppercase tracking-wider mb-2 border-b border-current/30 pb-1">
-                      Analisi B
-                    </h3>
-                    <div className="text-xs sm:text-sm font-sans">
-                      <MarkdownRenderer content={currentSlide.rightColumn || ''} className="text-inherit" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Layout 4: FORMULA (Focus LaTeX KaTeX) */}
-            {currentSlide.layout === 'formula' && (
-              <div className="space-y-6">
-                <h2 className="text-2xl sm:text-3xl font-bold font-mono uppercase tracking-tight">
-                  {currentSlide.title}
-                </h2>
-                {currentSlide.formula && (
-                  <div className={`p-6 sm:p-8 border-2 border-current text-center my-4 ${isInverted ? 'bg-zinc-900' : 'bg-zinc-50'}`}>
-                    <MarkdownRenderer content={currentSlide.formula} className="text-lg sm:text-2xl font-bold" />
-                  </div>
-                )}
-                {currentSlide.bullets && currentSlide.bullets.length > 0 && (
-                  <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3 font-sans text-xs sm:text-sm">
-                    {currentSlide.bullets.map((b, idx) => (
-                      <li key={idx} className="flex items-start gap-2">
-                        <span className="w-1.5 h-1.5 bg-current mt-1.5 shrink-0" />
-                        <span>{b}</span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            )}
-
-            {/* Layout 5: CODE (Blocco Codice Tecnico) */}
-            {currentSlide.layout === 'code' && (
-              <div className="space-y-4">
-                <h2 className="text-2xl sm:text-3xl font-bold font-mono uppercase tracking-tight">
-                  {currentSlide.title}
-                </h2>
-                <div className={`p-4 border border-current font-mono text-xs sm:text-sm overflow-x-auto ${isInverted ? 'bg-zinc-950' : 'bg-zinc-100'}`}>
-                  <pre className="text-inherit">
-                    <code>{currentSlide.code || currentSlide.bullets?.join('\n')}</code>
-                  </pre>
-                </div>
-              </div>
-            )}
-
-            {/* Layout 6: QUOTE (Teorema o Citazione) */}
-            {currentSlide.layout === 'quote' && (
-              <div className="space-y-6 max-w-3xl mx-auto text-center py-4">
-                <Quote className="w-8 h-8 sm:w-12 sm:h-12 mx-auto opacity-30 stroke-[1.5]" />
-                <blockquote className="text-xl sm:text-3xl font-medium font-serif italic leading-relaxed">
-                  &ldquo;{currentSlide.quote || currentSlide.title}&rdquo;
-                </blockquote>
-                {currentSlide.quoteAuthor && (
-                  <p className="text-xs sm:text-sm font-mono uppercase tracking-wider opacity-70">
-                    — {currentSlide.quoteAuthor}
-                  </p>
-                )}
-              </div>
-            )}
+            {renderSlideBody(currentSlide, !!isInverted)}
           </div>
 
           {/* Footer Slide: Progresso */}
@@ -454,6 +449,40 @@ export default function PresentationViewer({ content, title, onEditSlide, isEdit
         >
           <ChevronRight className="w-5 h-5" />
         </button>
+      </div>
+
+      {/* PRINT-ONLY ALL SLIDES (PDF Vettoriale Multi-pagina Brutalist) */}
+      <div className="hidden print:block w-full">
+        {slides.map((slide, idx) => {
+          const isSlideInverted = !!slide.inverted
+          return (
+            <div 
+              key={slide.id || idx}
+              className={`w-full aspect-[16/9] border-2 border-black flex flex-col justify-between p-10 mb-8 break-inside-avoid break-after-page page-break-after-always ${
+                isSlideInverted ? 'bg-black text-white' : 'bg-white text-black'
+              }`}
+            >
+              {/* Header slide */}
+              <div className="flex items-center justify-between border-b border-current pb-2 font-mono text-[10px] font-bold uppercase tracking-widest">
+                <span className="px-1.5 py-0.5 border border-current">
+                  {`[ STUDYCLOUD // SLIDE ${(idx + 1).toString().padStart(2, '0')} · ${slide.layout.toUpperCase()} ]`}
+                </span>
+                <span>{courseName ? courseName.toUpperCase() : 'STUDYCLOUD ACADEMIC'}</span>
+              </div>
+
+              {/* Body Slide */}
+              <div className="my-auto py-4">
+                {renderSlideBody(slide, isSlideInverted)}
+              </div>
+
+              {/* Footer Slide */}
+              <div className="flex items-center justify-between border-t border-current pt-2 text-[10px] font-mono uppercase font-bold">
+                <span>{courseName || 'Accademico'}</span>
+                <span>SLIDE {idx + 1} / {slides.length}</span>
+              </div>
+            </div>
+          )
+        })}
       </div>
 
       {/* Presenter Notes Drawer (Note Oratore) */}

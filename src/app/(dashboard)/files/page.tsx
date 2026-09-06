@@ -6,7 +6,8 @@ import {
   FileText, Download, Trash2, Search, Folder, FolderPlus, 
   ChevronRight, Loader2, Upload, Pencil, FileIcon, GraduationCap, 
   School, CheckCircle2, AlertCircle, ChevronUp, ChevronDown, X, Youtube, 
-  ExternalLink, Copy, Scissors, Clipboard, CopyPlus, Sparkles, Laptop
+  ExternalLink, Copy, Scissors, Clipboard, CopyPlus, Sparkles, Laptop,
+  MoreVertical, Info
 } from 'lucide-react'
 import { 
   autoProcessAndClassify, createFolder, createCourse, renameDocument, 
@@ -95,6 +96,17 @@ export default function FilesPage() {
   const [ytLoading, setYtLoading] = useState(false)
   const [ytError, setYtError] = useState('')
   const [ytProgressState, setYtProgressState] = useState<YouTubeProgressState | null>(null)
+
+  const [expandedDocIds, setExpandedDocIds] = useState<Set<string>>(new Set())
+
+  const toggleExpand = (id: string) => {
+    setExpandedDocIds(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
 
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -727,7 +739,7 @@ export default function FilesPage() {
 
   return (
     <div 
-      className="flex flex-col h-full bg-[var(--color-bg)] select-none relative overflow-hidden"
+      className="flex flex-col h-full bg-white select-none relative overflow-hidden font-mono"
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
@@ -742,36 +754,36 @@ export default function FilesPage() {
 
       {/* Floating Toast Notification */}
       {toastMsg && (
-        <div className="fixed top-5 right-5 z-50 bg-slate-900 text-white text-xs font-semibold px-4 py-2.5 rounded-xl shadow-xl flex items-center gap-2 animate-in fade-in slide-in-from-top-3">
-          <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+        <div className="fixed top-5 right-5 z-50 bg-black text-white text-xs font-mono font-bold uppercase px-4 py-2.5 border-2 border-black shadow-[4px_4px_0px_rgba(0,0,0,1)] flex items-center gap-2 animate-in fade-in slide-in-from-top-3">
+          <CheckCircle2 className="w-4 h-4 text-white" />
           <span>{toastMsg}</span>
         </div>
       )}
 
       {/* Full-Screen Drag-Over Overlay */}
       {isDragOver && (
-        <div className="absolute inset-0 bg-[var(--color-accent)]/10 border-2 border-dashed border-[var(--color-accent)] z-50 flex flex-col items-center justify-center backdrop-blur-xs pointer-events-none animate-in fade-in duration-150">
-          <div className="w-16 h-16 rounded-full bg-blue-50 flex items-center justify-center mb-3 shadow-md">
-            <Upload className="w-8 h-8 text-[var(--color-accent)] animate-bounce" />
+        <div className="absolute inset-0 bg-black/85 border-4 border-dashed border-white z-50 flex flex-col items-center justify-center font-mono text-white pointer-events-none animate-in fade-in duration-150">
+          <div className="w-16 h-16 border-2 border-white bg-black flex items-center justify-center mb-3 shadow-[4px_4px_0px_rgba(255,255,255,1)]">
+            <Upload className="w-8 h-8 text-white animate-bounce" />
           </div>
-          <p className="text-base font-bold text-[var(--color-text)]">Rilascia qui per caricare i file</p>
-          <p className="text-xs text-[var(--color-text-secondary)] mt-1">Verranno analizzati e indicizzati automaticamente nella cartella corrente</p>
+          <p className="text-sm font-bold uppercase tracking-widest">Rilascia qui per caricare i file</p>
+          <p className="text-xs text-zinc-300 mt-1">Verranno analizzati e indicizzati automaticamente nella cartella corrente</p>
         </div>
       )}
 
       {/* Top Toolbar Responsive */}
-      <div className="min-h-12 border-b border-[var(--color-border)] flex items-center px-3 sm:px-4 py-2 gap-2 bg-[var(--color-bg)] shrink-0 flex-wrap justify-between">
+      <div className="min-h-12 border-b border-black flex items-center px-3 sm:px-4 py-2 gap-2 bg-white shrink-0 flex-wrap justify-between font-mono">
         {/* Breadcrumbs */}
-        <div className="flex items-center gap-1 flex-1 min-w-[200px] text-sm overflow-x-auto no-scrollbar py-0.5">
+        <div className="flex items-center gap-1.5 flex-1 min-w-[200px] text-xs overflow-x-auto no-scrollbar py-0.5">
           {breadcrumb.map((bc, i) => (
-            <div key={i} className="flex items-center gap-1 shrink-0">
-              {i > 0 && <ChevronRight className="w-3.5 h-3.5 text-[var(--color-text-muted)]" />}
+            <div key={i} className="flex items-center gap-1.5 shrink-0">
+              {i > 0 && <span className="text-zinc-400 font-bold">/</span>}
               <button 
                 onClick={() => navigateBreadcrumb(i)}
-                className={`px-1.5 py-0.5 rounded text-[13px] transition-colors whitespace-nowrap ${
+                className={`px-2 py-1 border text-xs uppercase font-mono font-bold transition-colors whitespace-nowrap ${
                   i === breadcrumb.length - 1 
-                    ? 'font-semibold text-[var(--color-text)]' 
-                    : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)]'
+                    ? 'bg-black text-white border-black shadow-[1px_1px_0px_rgba(0,0,0,1)]' 
+                    : 'bg-white text-black border-zinc-300 hover:border-black hover:bg-zinc-50'
                 }`}
               >
                 {bc.name}
@@ -783,14 +795,14 @@ export default function FilesPage() {
         {/* Action Controls & Search */}
         <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto justify-end">
           {/* Quick Toolbar: Copy / Cut / Paste */}
-          <div className="flex items-center gap-1 bg-slate-100/70 p-1 rounded-lg border border-slate-200/80 shrink-0">
+          <div className="flex items-center gap-1 bg-zinc-50 p-1 border border-black shrink-0 font-mono">
             <button
               onClick={() => {
                 const item = files.find(f => f.id === selectedId) || folders.find(f => f.id === selectedId)
                 if (item) handleCopy(item, files.some(f => f.id === selectedId) ? 'file' : 'folder')
               }}
               disabled={!selectedId}
-              className="p-1.5 text-slate-700 hover:bg-white rounded-md disabled:opacity-30 transition-colors"
+              className="p-1.5 border border-black text-black bg-white hover:bg-black hover:text-white disabled:opacity-30 disabled:hover:bg-white disabled:hover:text-black transition-colors"
               title="Copia elemento selezionato (Ctrl+C)"
             >
               <Copy className="w-3.5 h-3.5" />
@@ -802,7 +814,7 @@ export default function FilesPage() {
                 if (item) handleCut(item, files.some(f => f.id === selectedId) ? 'file' : 'folder')
               }}
               disabled={!selectedId}
-              className="p-1.5 text-slate-700 hover:bg-white rounded-md disabled:opacity-30 transition-colors"
+              className="p-1.5 border border-black text-black bg-white hover:bg-black hover:text-white disabled:opacity-30 disabled:hover:bg-white disabled:hover:text-black transition-colors"
               title="Taglia elemento selezionato (Ctrl+X)"
             >
               <Scissors className="w-3.5 h-3.5" />
@@ -811,8 +823,8 @@ export default function FilesPage() {
             <button
               onClick={handlePaste}
               disabled={!clipboard}
-              className={`flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-md transition-colors ${
-                clipboard ? 'bg-blue-600 text-white shadow-2xs' : 'text-slate-400 opacity-40 cursor-not-allowed'
+              className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-mono font-bold uppercase border border-black transition-colors ${
+                clipboard ? 'bg-black text-white hover:bg-zinc-800 shadow-[1px_1px_0px_rgba(0,0,0,1)]' : 'text-zinc-400 opacity-40 cursor-not-allowed bg-zinc-100'
               }`}
               title={clipboard ? `Incolla "${'title' in clipboard.item ? clipboard.item.title : clipboard.item.name}" (Ctrl+V)` : "Nessun elemento negli appunti"}
             >
@@ -887,175 +899,362 @@ export default function FilesPage() {
         onClick={() => setSelectedId(null)}
       >
         {loading ? (
-          <div className="flex items-center justify-center h-full text-[var(--color-text-muted)] text-sm">Caricamento...</div>
+          <div className="flex items-center justify-center h-full text-black font-mono text-xs uppercase tracking-wider">
+            <Loader2 className="w-4 h-4 animate-spin mr-2" />
+            Caricamento...
+          </div>
         ) : (childFolders.length === 0 && currentFiles.length === 0 && (!showCourses || courses.length === 0)) ? (
-          <div className="flex flex-col items-center justify-center h-full text-[var(--color-text-muted)]">
-            <Folder className="w-12 h-12 mb-3 opacity-30" />
-            <p className="text-sm font-medium">Questa cartella è vuota</p>
-            <p className="text-xs text-[var(--color-text-muted)] mt-1">Trascina qui i tuoi documenti o incolla un link YouTube</p>
+          <div className="flex flex-col items-center justify-center h-full font-mono text-center p-8">
+            <div className="border-2 border-black p-3 bg-zinc-50 mb-3 shadow-[2px_2px_0px_rgba(0,0,0,1)]">
+              <Folder className="w-8 h-8 text-black" />
+            </div>
+            <p className="text-xs font-bold uppercase tracking-wider text-black">Questa cartella è vuota</p>
+            <p className="text-[11px] text-zinc-500 mt-1 max-w-sm">Trascina qui i tuoi documenti o clicca su Carica per importare file o video YouTube.</p>
           </div>
         ) : (
-          <table className="w-full text-left border-collapse text-[13px]">
-            <thead>
-              <tr className="border-b border-[var(--color-border)] text-[var(--color-text-secondary)] text-[12px] font-medium bg-[var(--color-bg-secondary)] sticky top-0 z-10">
-                <th className="py-2 pl-6 pr-3 font-medium">Nome</th>
-                <th className="py-2 px-3 font-medium w-40">Ultima modifica</th>
-                <th className="py-2 px-3 font-medium w-28">Tipo</th>
-                <th className="py-2 px-3 font-medium w-28">Dimensione</th>
-                <th className="py-2 px-3 pr-6 font-medium w-36">Stato AI</th>
-              </tr>
-            </thead>
-            <tbody>
-              {/* Courses (at root level) */}
-              {showCourses && courses.map(course => (
-                <tr 
-                  key={course.id}
-                  onDoubleClick={() => openCourse(course)}
-                  onContextMenu={e => handleContextMenu(e, 'course', course)}
-                  onClick={e => { e.stopPropagation(); setSelectedId(course.id) }}
-                  className={`cursor-default border-b border-transparent hover:bg-[var(--color-bg-hover)] ${selectedId === course.id ? 'bg-[#e8f0fe]' : ''}`}
-                >
-                  <td className="py-2 pl-6 pr-3 flex items-center gap-3">
-                    <GraduationCap className="w-5 h-5 text-[var(--color-accent)] shrink-0" />
-                    <span className="font-semibold text-[var(--color-text)] truncate">{course.name}</span>
-                  </td>
-                  <td className="py-2 px-3 text-[var(--color-text-muted)]">—</td>
-                  <td className="py-2 px-3 text-[var(--color-text-muted)]">Corso di Laurea</td>
-                  <td className="py-2 px-3 text-[var(--color-text-muted)]">—</td>
-                  <td className="py-2 px-3 pr-6 text-[var(--color-text-muted)]">—</td>
+          <>
+            {/* 1. DESKTOP TABLE VIEW (Visibile solo da schermo tablet/desktop md:table) */}
+            <table className="hidden md:table w-full text-left border-collapse text-xs font-mono">
+              <thead>
+                <tr className="border-b-2 border-black text-black text-[11px] font-bold uppercase bg-zinc-50 sticky top-0 z-10">
+                  <th className="py-2.5 pl-6 pr-3 font-mono">Nome</th>
+                  <th className="py-2.5 px-3 font-mono w-44">Ultima modifica</th>
+                  <th className="py-2.5 px-3 font-mono w-36">Tipo</th>
+                  <th className="py-2.5 px-3 font-mono w-28">Dimensione</th>
+                  <th className="py-2.5 px-3 pr-6 font-mono w-36">Stato AI</th>
                 </tr>
+              </thead>
+              <tbody>
+                {/* Courses (at root level) */}
+                {showCourses && courses.map(course => {
+                  const isSelected = selectedId === course.id
+                  return (
+                    <tr 
+                      key={course.id}
+                      onDoubleClick={() => openCourse(course)}
+                      onContextMenu={e => handleContextMenu(e, 'course', course)}
+                      onClick={e => { e.stopPropagation(); setSelectedId(course.id) }}
+                      className={`cursor-pointer border-b border-zinc-200 transition-colors ${
+                        isSelected ? 'bg-black text-white font-bold' : 'hover:bg-zinc-100 text-black'
+                      }`}
+                    >
+                      <td className="py-2.5 pl-6 pr-3 flex items-center gap-3">
+                        <div className={`p-1 border border-black shrink-0 ${isSelected ? 'bg-white text-black' : 'bg-black text-white'}`}>
+                          <GraduationCap className="w-4 h-4" />
+                        </div>
+                        <span className="font-bold text-xs truncate">{course.name}</span>
+                      </td>
+                      <td className={`py-2.5 px-3 ${isSelected ? 'text-zinc-300' : 'text-zinc-500'}`}>—</td>
+                      <td className="py-2.5 px-3">
+                        <span className={`border px-1.5 py-0.5 text-[10px] uppercase font-mono ${
+                          isSelected ? 'border-white text-white' : 'border-black text-black bg-zinc-50'
+                        }`}>
+                          Corso
+                        </span>
+                      </td>
+                      <td className={`py-2.5 px-3 ${isSelected ? 'text-zinc-300' : 'text-zinc-500'}`}>—</td>
+                      <td className={`py-2.5 px-3 pr-6 ${isSelected ? 'text-zinc-300' : 'text-zinc-500'}`}>—</td>
+                    </tr>
+                  )
+                })}
+
+                {/* Folders */}
+                {childFolders.map(folder => {
+                  const folderDisplayName = folder.name.split('/').pop() || folder.name
+                  const isCut = clipboard?.action === 'cut' && clipboard.item.id === folder.id
+                  const isDropTarget = dragOverFolderId === folder.id
+                  const isSelected = selectedId === folder.id
+
+                  return (
+                    <tr 
+                      key={folder.id}
+                      draggable
+                      onDragStart={e => handleItemDragStart(e, folder, 'folder')}
+                      onDragOver={e => handleItemDragOver(e, folder.id)}
+                      onDragLeave={handleItemDragLeave}
+                      onDrop={e => handleItemDropOnFolder(e, folder.id)}
+                      onDoubleClick={() => openFolder(folder)}
+                      onContextMenu={e => handleContextMenu(e, 'folder', folder)}
+                      onClick={e => { e.stopPropagation(); setSelectedId(folder.id) }}
+                      className={`cursor-pointer border-b border-zinc-200 transition-colors ${
+                        isSelected ? 'bg-black text-white font-bold' : 'hover:bg-zinc-100 text-black'
+                      } ${isCut ? 'opacity-40 border-dashed border-black' : ''} ${
+                        isDropTarget ? 'bg-zinc-200 border-2 border-black' : ''
+                      }`}
+                    >
+                      <td className="py-2.5 pl-6 pr-3 flex items-center gap-3">
+                        <div className={`p-1 border border-black shrink-0 ${isSelected ? 'bg-white text-black' : 'bg-zinc-100 text-black'}`}>
+                          <Folder className="w-4 h-4" />
+                        </div>
+                        <span className="font-bold text-xs truncate">{folderDisplayName}</span>
+                        {isCut && <span className="text-[10px] italic">(Tagliato)</span>}
+                      </td>
+                      <td className={`py-2.5 px-3 ${isSelected ? 'text-zinc-300' : 'text-zinc-500'}`}>—</td>
+                      <td className="py-2.5 px-3">
+                        <span className={`border px-1.5 py-0.5 text-[10px] uppercase font-mono ${
+                          isSelected ? 'border-white text-white' : 'border-zinc-300 text-zinc-600 bg-white'
+                        }`}>
+                          Cartella
+                        </span>
+                      </td>
+                      <td className={`py-2.5 px-3 ${isSelected ? 'text-zinc-300' : 'text-zinc-500'}`}>—</td>
+                      <td className={`py-2.5 px-3 pr-6 ${isSelected ? 'text-zinc-300' : 'text-zinc-500'}`}>—</td>
+                    </tr>
+                  )
+                })}
+
+                {/* Files */}
+                {currentFiles.map(f => {
+                  const isCut = clipboard?.action === 'cut' && clipboard.item.id === f.id
+                  const isSelected = selectedId === f.id
+                  const isYt = f.file_type === 'youtube' || f.file_type.includes('youtube') || f.file_path.startsWith('http')
+
+                  return (
+                    <tr 
+                      key={f.id}
+                      draggable
+                      onDragStart={e => handleItemDragStart(e, f, 'file')}
+                      onContextMenu={e => handleContextMenu(e, 'file', f)}
+                      onClick={e => { e.stopPropagation(); setSelectedId(f.id) }}
+                      className={`cursor-pointer border-b border-zinc-200 transition-colors ${
+                        isSelected ? 'bg-black text-white font-bold' : 'hover:bg-zinc-100 text-black'
+                      } ${isCut ? 'opacity-40 border-dashed border-black' : ''}`}
+                    >
+                      <td className="py-2.5 pl-6 pr-3 flex items-center gap-3">
+                        <div className={`p-1 border border-black shrink-0 ${isSelected ? 'bg-white text-black' : 'bg-zinc-100 text-black'}`}>
+                          {isYt ? (
+                            <Youtube className="w-4 h-4" />
+                          ) : f.file_type.includes('pdf') ? (
+                            <FileText className="w-4 h-4" />
+                          ) : (
+                            <FileIcon className="w-4 h-4" />
+                          )}
+                        </div>
+                        <span className="truncate font-medium">{f.title}</span>
+                        {isCut && <span className="text-[10px] italic">(Tagliato)</span>}
+                      </td>
+                      <td className={`py-2.5 px-3 ${isSelected ? 'text-zinc-300' : 'text-zinc-600'}`}>
+                        {new Date(f.created_at).toLocaleDateString('it-IT', { day: '2-digit', month: 'short', year: 'numeric' })}
+                      </td>
+                      <td className="py-2.5 px-3">
+                        <span className={`border px-1.5 py-0.5 text-[10px] uppercase font-mono font-bold ${
+                          isSelected ? 'border-white text-white' : isYt ? 'border-black bg-black text-white' : 'border-black text-black bg-zinc-50'
+                        }`}>
+                          {isYt ? 'YOUTUBE' : f.file_type.split('/')[1]?.toUpperCase() || 'FILE'}
+                        </span>
+                      </td>
+                      <td className={`py-2.5 px-3 ${isSelected ? 'text-zinc-300' : 'text-zinc-600'}`}>{formatSize(f.size_bytes)}</td>
+                      <td className="py-2.5 px-3 pr-6">
+                        <div className="flex items-center gap-1.5">
+                          {f.status.includes('elaborazione') && (
+                            <Loader2 className={`w-3 h-3 animate-spin ${isSelected ? 'text-white' : 'text-black'}`} />
+                          )}
+                          <span className={`border px-1.5 py-0.5 text-[10px] uppercase font-mono ${
+                            isSelected 
+                              ? 'border-white text-white' 
+                              : f.status === 'organizzato' 
+                              ? 'border-black text-black font-bold bg-zinc-50' 
+                              : 'border-zinc-300 text-zinc-500'
+                          }`}>
+                            {f.status}
+                          </span>
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+
+            {/* 2. MOBILE VERTICAL LIST VIEW (Con dettagli nascosti ed espandibili via tastino) */}
+            <div className="md:hidden p-2.5 space-y-2">
+              {/* Courses on Mobile */}
+              {showCourses && courses.map(course => (
+                <div
+                  key={course.id}
+                  onClick={() => openCourse(course)}
+                  onContextMenu={e => handleContextMenu(e, 'course', course)}
+                  className="flex items-center justify-between p-3 border border-black bg-white shadow-[2px_2px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px]"
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="p-1.5 border border-black bg-zinc-50 shrink-0">
+                      <GraduationCap className="w-4 h-4 text-black" />
+                    </div>
+                    <div>
+                      <span className="font-mono font-bold text-xs uppercase truncate text-black block">{course.name}</span>
+                      <span className="text-[10px] text-zinc-500 font-mono">Corso di Laurea</span>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-zinc-400 shrink-0" />
+                </div>
               ))}
 
-              {/* Folders */}
+              {/* Folders on Mobile */}
               {childFolders.map(folder => {
                 const folderDisplayName = folder.name.split('/').pop() || folder.name
                 const isCut = clipboard?.action === 'cut' && clipboard.item.id === folder.id
-                const isDropTarget = dragOverFolderId === folder.id
-
                 return (
-                  <tr 
+                  <div
                     key={folder.id}
-                    draggable
-                    onDragStart={e => handleItemDragStart(e, folder, 'folder')}
-                    onDragOver={e => handleItemDragOver(e, folder.id)}
-                    onDragLeave={handleItemDragLeave}
-                    onDrop={e => handleItemDropOnFolder(e, folder.id)}
-                    onDoubleClick={() => openFolder(folder)}
+                    onClick={() => openFolder(folder)}
                     onContextMenu={e => handleContextMenu(e, 'folder', folder)}
-                    onClick={e => { e.stopPropagation(); setSelectedId(folder.id) }}
-                    className={`cursor-default border-b border-transparent hover:bg-[var(--color-bg-hover)] transition-all ${
-                      selectedId === folder.id ? 'bg-[#e8f0fe]' : ''
-                    } ${isCut ? 'opacity-40 border-dashed border-slate-400' : ''} ${
-                      isDropTarget ? 'bg-blue-100 border-2 border-blue-500 rounded-lg' : ''
+                    className={`flex items-center justify-between p-2.5 border border-black bg-white shadow-[2px_2px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] ${
+                      isCut ? 'opacity-40 border-dashed' : ''
                     }`}
                   >
-                    <td className="py-2 pl-6 pr-3 flex items-center gap-3">
-                      <Folder className="w-5 h-5 text-amber-500 shrink-0 fill-amber-500/20" />
-                      <span className="font-medium text-[var(--color-text)] truncate">{folderDisplayName}</span>
-                      {isCut && <span className="text-[10px] text-slate-500 italic">(Tagliato)</span>}
-                    </td>
-                    <td className="py-2 px-3 text-[var(--color-text-muted)]">—</td>
-                    <td className="py-2 px-3 text-[var(--color-text-muted)]">Cartella</td>
-                    <td className="py-2 px-3 text-[var(--color-text-muted)]">—</td>
-                    <td className="py-2 px-3 pr-6 text-[var(--color-text-muted)]">—</td>
-                  </tr>
+                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                      <div className="p-1.5 border border-black bg-zinc-50 shrink-0">
+                        <Folder className="w-4 h-4 text-black" />
+                      </div>
+                      <span className="font-mono font-bold text-xs truncate text-black">{folderDisplayName}</span>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); handleContextMenu(e, 'folder', folder); }}
+                        className="p-1.5 border border-black text-black hover:bg-black hover:text-white transition-colors"
+                        title="Opzioni cartella"
+                      >
+                        <MoreVertical className="w-3.5 h-3.5" />
+                      </button>
+                      <ChevronRight className="w-4 h-4 text-zinc-400" />
+                    </div>
+                  </div>
                 )
               })}
 
-              {/* Files */}
+              {/* Files on Mobile (Lista verticale con dettagli nascosti ed apribili con tastino) */}
               {currentFiles.map(f => {
+                const isExpanded = expandedDocIds.has(f.id)
+                const isSelected = selectedId === f.id
                 const isCut = clipboard?.action === 'cut' && clipboard.item.id === f.id
 
                 return (
-                  <tr 
+                  <div
                     key={f.id}
-                    draggable
-                    onDragStart={e => handleItemDragStart(e, f, 'file')}
+                    onClick={() => setSelectedId(f.id)}
                     onContextMenu={e => handleContextMenu(e, 'file', f)}
-                    onClick={e => { e.stopPropagation(); setSelectedId(f.id) }}
-                    className={`cursor-default border-b border-transparent hover:bg-[var(--color-bg-hover)] transition-all ${
-                      selectedId === f.id ? 'bg-[#e8f0fe]' : ''
-                    } ${isCut ? 'opacity-40 border-dashed border-slate-400' : ''}`}
+                    className={`border border-black bg-white transition-all shadow-[2px_2px_0px_rgba(0,0,0,1)] ${
+                      isSelected ? 'bg-zinc-50 ring-1 ring-black' : ''
+                    } ${isCut ? 'opacity-40 border-dashed' : ''}`}
                   >
-                    <td className="py-2 pl-6 pr-3 flex items-center gap-3">
-                      {f.file_type === 'youtube' || f.file_type.includes('youtube') || f.file_path.startsWith('http') ? (
-                        <Youtube className="w-5 h-5 text-red-600 shrink-0" />
-                      ) : f.file_type.includes('pdf') ? (
-                        <FileText className="w-5 h-5 text-red-500 shrink-0" />
-                      ) : (
-                        <FileIcon className="w-5 h-5 text-[var(--color-accent)] shrink-0" />
-                      )}
-                      <span className="truncate text-[var(--color-text)]">{f.title}</span>
-                      {isCut && <span className="text-[10px] text-slate-500 italic">(Tagliato)</span>}
-                    </td>
-                    <td className="py-2 px-3 text-[var(--color-text-muted)]">
-                      {new Date(f.created_at).toLocaleDateString('it-IT', { day: '2-digit', month: 'short', year: 'numeric' })}
-                    </td>
-                    <td className="py-2 px-3 text-[var(--color-text-muted)]">
-                      {f.file_type === 'youtube' ? (
-                        <span className="bg-red-50 text-red-700 font-bold px-2 py-0.5 rounded text-[10px]">YOUTUBE</span>
-                      ) : (
-                        f.file_type.split('/')[1]?.toUpperCase() || 'File'
-                      )}
-                    </td>
-                    <td className="py-2 px-3 text-[var(--color-text-muted)]">{formatSize(f.size_bytes)}</td>
-                    <td className="py-2 px-3 pr-6">
-                      <div className="flex items-center gap-1.5">
-                        {f.status.includes('elaborazione') && <Loader2 className="w-3 h-3 animate-spin text-[var(--color-accent)]" />}
-                        <span className={f.status === 'organizzato' ? 'text-emerald-600 font-medium' : 'text-[var(--color-text-muted)]'}>{f.status}</span>
+                    {/* Riga principale: Icona, Titolo, Tastino Dettagli e Tastino Azioni */}
+                    <div className="flex items-center justify-between p-2.5 gap-2">
+                      <div className="flex items-center gap-2 min-w-0 flex-1">
+                        <div className="p-1.5 border border-black bg-zinc-50 shrink-0">
+                          {f.file_type === 'youtube' || f.file_type.includes('youtube') || f.file_path.startsWith('http') ? (
+                            <Youtube className="w-3.5 h-3.5 text-black" />
+                          ) : f.file_type.includes('pdf') ? (
+                            <FileText className="w-3.5 h-3.5 text-black" />
+                          ) : (
+                            <FileIcon className="w-3.5 h-3.5 text-black" />
+                          )}
+                        </div>
+                        <span className="font-mono text-xs font-bold text-black truncate">{f.title}</span>
                       </div>
-                    </td>
-                  </tr>
+
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {/* TASTINO DETTAGLI (Mostra/Nasconde i dettagli tecnici) */}
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); toggleExpand(f.id); }}
+                          className={`p-1.5 border border-black transition-colors flex items-center justify-center ${
+                            isExpanded ? 'bg-black text-white' : 'bg-white hover:bg-zinc-100 text-black'
+                          }`}
+                          title={isExpanded ? "Nascondi dettagli" : "Mostra dettagli"}
+                        >
+                          <Info className="w-3.5 h-3.5" />
+                        </button>
+
+                        {/* TASTINO AZIONI RAPIDE */}
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); handleContextMenu(e, 'file', f); }}
+                          className="p-1.5 border border-black bg-white hover:bg-black hover:text-white text-black transition-colors"
+                          title="Opzioni file"
+                        >
+                          <MoreVertical className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* DETTAGLI NASCOSTI - VISIBILI SOLO SE ESPANSI CON IL TASTINO */}
+                    {isExpanded && (
+                      <div className="border-t border-zinc-200 bg-zinc-50 p-2.5 text-[11px] font-mono space-y-1.5 animate-in fade-in duration-100">
+                        <div className="flex justify-between text-zinc-600">
+                          <span>Data:</span>
+                          <span className="text-black font-semibold">
+                            {new Date(f.created_at).toLocaleDateString('it-IT', { day: '2-digit', month: 'short', year: 'numeric' })}
+                          </span>
+                        </div>
+                        <div className="flex justify-between text-zinc-600">
+                          <span>Dimensione:</span>
+                          <span className="text-black font-semibold">{formatSize(f.size_bytes)}</span>
+                        </div>
+                        <div className="flex justify-between text-zinc-600">
+                          <span>Tipo:</span>
+                          <span className="text-black font-semibold uppercase">{f.file_type.split('/')[1] || f.file_type}</span>
+                        </div>
+                        <div className="flex justify-between text-zinc-600 items-center">
+                          <span>Stato RAG AI:</span>
+                          <div className="flex items-center gap-1 text-black font-semibold">
+                            {f.status.includes('elaborazione') && <Loader2 className="w-3 h-3 animate-spin text-black" />}
+                            <span className={f.status === 'organizzato' ? 'text-emerald-700 font-bold' : ''}>{f.status}</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 )
               })}
-            </tbody>
-          </table>
+            </div>
+          </>
         )}
       </div>
 
       {/* Status bar */}
-      <div className="h-7 border-t border-[var(--color-border)] flex items-center px-4 text-[12px] text-[var(--color-text-muted)] shrink-0 bg-[var(--color-bg-secondary)] justify-between">
+      <div className="h-8 border-t border-black flex items-center px-4 text-xs font-mono font-bold text-black shrink-0 bg-zinc-50 justify-between uppercase tracking-wider">
         <div className="flex items-center gap-4">
           <span>{(showCourses ? courses.length : 0) + childFolders.length + currentFiles.length} elementi</span>
           {clipboard && (
-            <span className="text-blue-600 font-medium flex items-center gap-1">
+            <span className="text-black font-bold flex items-center gap-1.5 border border-black px-2 py-0.5 bg-white shadow-[1px_1px_0px_rgba(0,0,0,1)]">
               <Clipboard className="w-3 h-3" />
               Appunti: {clipboard.action === 'cut' ? 'Tagliato' : 'Copiato'} &quot;{'title' in clipboard.item ? clipboard.item.title : clipboard.item.name}&quot;
             </span>
           )}
         </div>
-        {currentCourse && <span className="text-[var(--color-text-secondary)] font-medium">Corso: {currentCourse.name}</span>}
+        {currentCourse && <span className="text-zinc-600 font-normal">Corso: {currentCourse.name}</span>}
       </div>
 
       {/* FLOATING MULTI-UPLOAD PROGRESS WIDGET (Bottom-Right) */}
       {showUploadWidget && uploadQueue.length > 0 && (
-        <div className="fixed bottom-4 right-4 z-50 w-80 sm:w-96 bg-white border border-[var(--color-border)] rounded-xl shadow-2xl overflow-hidden animate-in slide-in-from-bottom-5 duration-200">
+        <div className="fixed bottom-4 right-4 z-50 w-80 sm:w-96 bg-white border-2 border-black shadow-[6px_6px_0px_rgba(0,0,0,1)] font-mono overflow-hidden animate-in slide-in-from-bottom-5 duration-200">
           {/* Header */}
-          <div className="flex items-center justify-between px-3.5 py-2.5 bg-[var(--color-bg-secondary)] border-b border-[var(--color-border)]">
+          <div className="flex items-center justify-between px-3.5 py-2.5 bg-zinc-50 border-b border-black">
             <div className="flex items-center gap-2 min-w-0">
               {activeUploads.length > 0 ? (
-                <Loader2 className="w-4 h-4 text-[var(--color-accent)] animate-spin shrink-0" />
+                <Loader2 className="w-4 h-4 text-black animate-spin shrink-0" />
               ) : (
-                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                <CheckCircle2 className="w-4 h-4 text-black shrink-0" />
               )}
-              <span className="text-xs font-semibold text-[var(--color-text)] truncate">
+              <span className="text-xs font-bold uppercase tracking-wider text-black truncate">
                 {activeUploads.length > 0
-                  ? `Caricamento di ${uploadQueue.length} file (${overallProgress}%)`
-                  : `${completedUploads.length} di ${uploadQueue.length} file caricati`}
+                  ? `Caricamento (${overallProgress}%)`
+                  : `${completedUploads.length} di ${uploadQueue.length} caricati`}
               </span>
             </div>
 
             <div className="flex items-center gap-1 shrink-0">
               <button 
                 onClick={() => setIsUploadWidgetMinimized(!isUploadWidgetMinimized)} 
-                className="p-1 text-[var(--color-text-muted)] hover:text-[var(--color-text)] rounded hover:bg-[var(--color-bg-hover)] transition-colors"
+                className="p-1 border border-black text-black hover:bg-zinc-100 transition-colors"
                 title={isUploadWidgetMinimized ? "Espandi dettagli" : "Riduci a icona"}
               >
                 {isUploadWidgetMinimized ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
               </button>
               <button 
                 onClick={() => { setShowUploadWidget(false); setUploadQueue([]) }} 
-                className="p-1 text-[var(--color-text-muted)] hover:text-red-500 rounded hover:bg-[var(--color-bg-hover)] transition-colors"
+                className="p-1 border border-black text-black hover:bg-black hover:text-white transition-colors"
                 title="Chiudi pannello"
               >
                 <X className="w-3.5 h-3.5" />
@@ -1064,30 +1263,32 @@ export default function FilesPage() {
           </div>
 
           {/* Progress Bar Line */}
-          <div className="w-full bg-slate-100 h-1">
+          <div className="w-full bg-zinc-200 h-2 border-b border-black">
             <div 
-              className={`h-1 transition-all duration-300 ${activeUploads.length > 0 ? 'bg-[var(--color-accent)]' : 'bg-emerald-500'}`}
+              className="h-2 bg-black transition-all duration-300"
               style={{ width: `${overallProgress}%` }}
             />
           </div>
 
           {/* Collapsible File List */}
           {!isUploadWidgetMinimized && (
-            <div className="max-h-56 overflow-y-auto divide-y divide-[var(--color-border)] px-1 py-1 bg-white">
+            <div className="max-h-56 overflow-y-auto divide-y divide-zinc-200 px-1 py-1 bg-white font-mono">
               {uploadQueue.map(item => (
-                <div key={item.id} className="p-2.5 flex items-center justify-between gap-3 text-xs hover:bg-[var(--color-bg-hover)] rounded-md transition-colors">
+                <div key={item.id} className="p-2.5 flex items-center justify-between gap-3 text-xs hover:bg-zinc-50 transition-colors">
                   <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                    {item.name.endsWith('.pdf') ? (
-                      <FileText className="w-4 h-4 text-red-500 shrink-0" />
-                    ) : (
-                      <FileIcon className="w-4 h-4 text-[var(--color-accent)] shrink-0" />
-                    )}
+                    <div className="p-1 border border-black bg-zinc-100 shrink-0">
+                      {item.name.endsWith('.pdf') ? (
+                        <FileText className="w-3.5 h-3.5 text-black" />
+                      ) : (
+                        <FileIcon className="w-3.5 h-3.5 text-black" />
+                      )}
+                    </div>
                     <div className="min-w-0 flex-1">
-                      <p className="font-medium text-[var(--color-text)] truncate">{item.name}</p>
-                      <p className="text-[10px] text-[var(--color-text-muted)]">
-                        {item.status === 'uploading' ? 'Caricamento nello Storage...' :
-                         item.status === 'processing' ? 'Estrazione testo e pgvector AI...' :
-                         item.status === 'completed' ? 'Completato e indicizzato' :
+                      <p className="font-bold text-black truncate">{item.name}</p>
+                      <p className="text-[10px] text-zinc-500">
+                        {item.status === 'uploading' ? 'Caricamento Storage...' :
+                         item.status === 'processing' ? 'Estrazione pgvector AI...' :
+                         item.status === 'completed' ? 'Completato' :
                          item.error ? item.error : 'In attesa...'}
                       </p>
                     </div>
@@ -1095,16 +1296,16 @@ export default function FilesPage() {
 
                   <div className="shrink-0 flex items-center">
                     {item.status === 'uploading' && (
-                      <span className="text-[10px] text-[var(--color-text-muted)] font-mono">{item.progress}%</span>
+                      <span className="text-[10px] font-mono text-black font-bold">{item.progress}%</span>
                     )}
                     {item.status === 'processing' && (
-                      <Loader2 className="w-3.5 h-3.5 text-[var(--color-accent)] animate-spin" />
+                      <Loader2 className="w-3.5 h-3.5 text-black animate-spin" />
                     )}
                     {item.status === 'completed' && (
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                      <CheckCircle2 className="w-4 h-4 text-black" />
                     )}
                     {item.status === 'error' && (
-                      <AlertCircle className="w-3.5 h-3.5 text-red-500" />
+                      <AlertCircle className="w-3.5 h-3.5 text-black" />
                     )}
                   </div>
                 </div>
@@ -1139,7 +1340,7 @@ export default function FilesPage() {
               </div>
               {!currentCourseId && !currentFolder && (
                 <div className="context-menu-item" onClick={() => { setDialog({ type: 'newCourse', value: '' }); setCtxMenu(null) }}>
-                  <GraduationCap className="w-4 h-4 text-[var(--color-accent)]" /> Nuovo Corso
+                  <GraduationCap className="w-4 h-4 text-black" /> Nuovo Corso
                 </div>
               )}
             </>
@@ -1172,7 +1373,7 @@ export default function FilesPage() {
                 <Scissors className="w-4 h-4" /> Taglia cartella
               </div>
               {clipboard && (
-                <div className="context-menu-item text-blue-600" onClick={() => { openFolder(ctxMenu.item); handlePaste(); setCtxMenu(null) }}>
+                <div className="context-menu-item font-bold" onClick={() => { openFolder(ctxMenu.item); handlePaste(); setCtxMenu(null) }}>
                   <Clipboard className="w-4 h-4" /> Incolla all&apos;interno
                 </div>
               )}
@@ -1209,8 +1410,8 @@ export default function FilesPage() {
               <div className="context-menu-item" onClick={() => { setDialog({ type: 'renameFile', value: ctxMenu.item.title, targetId: ctxMenu.item.id }); setCtxMenu(null) }}>
                 <Pencil className="w-4 h-4" /> Rinomina (F2)
               </div>
-              <div className="context-menu-item text-blue-600" onClick={() => { handleReindexSingleDocument(ctxMenu.item); setCtxMenu(null) }}>
-                <Sparkles className="w-4 h-4 text-blue-600" /> Rigenera Vettori RAG
+              <div className="context-menu-item font-bold" onClick={() => { handleReindexSingleDocument(ctxMenu.item); setCtxMenu(null) }}>
+                <Sparkles className="w-4 h-4 text-black" /> Rigenera Vettori RAG
               </div>
               <div className="context-menu-separator" />
               <div className="context-menu-item danger" onClick={() => { handleDelete(ctxMenu.item); setCtxMenu(null) }}>
@@ -1223,9 +1424,9 @@ export default function FilesPage() {
 
       {/* Generic Unified Dialog (New Course, New Folder, Rename File/Folder/Course) */}
       {dialog && (
-        <div className="modal-overlay" onClick={() => setDialog(null)}>
-          <div className="modal-content max-w-sm" onClick={e => e.stopPropagation()}>
-            <h3 className="text-[17px] font-bold text-[var(--color-text)] mb-2">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-100" onClick={() => setDialog(null)}>
+          <div className="bg-white border-2 border-black p-5 sm:p-6 w-full max-w-sm shadow-[6px_6px_0px_rgba(0,0,0,1)] font-mono text-black" onClick={e => e.stopPropagation()}>
+            <h3 className="text-xs font-bold uppercase tracking-wider text-black mb-1">
               {dialog.type === 'newCourse' && 'Nuovo Corso Universitario'}
               {dialog.type === 'newFolder' && 'Nuova Cartella'}
               {dialog.type === 'renameFile' && 'Rinomina File'}
@@ -1233,9 +1434,9 @@ export default function FilesPage() {
               {dialog.type === 'renameCourse' && 'Rinomina Corso'}
             </h3>
             
-            <p className="text-xs text-[var(--color-text-muted)] mb-3">
+            <p className="text-[11px] text-zinc-500 mb-3">
               {dialog.type === 'newCourse' 
-                ? 'Inserisci il nome della materia o corso universitario (es. Analisi Matematica 1).' 
+                ? 'Inserisci il nome della materia o corso universitario.' 
                 : dialog.type === 'newFolder' 
                 ? 'Inserisci il nome della cartella o modulo.' 
                 : 'Inserisci il nuovo nome da assegnare all\'elemento.'}
@@ -1250,18 +1451,21 @@ export default function FilesPage() {
               onKeyDown={e => { 
                 if (e.key === 'Enter') handleExecuteDialog()
               }}
-              className="w-full border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm outline-none focus:border-[var(--color-accent)] mb-4"
+              className="w-full border border-black px-3 py-2 text-xs font-mono outline-none focus:bg-zinc-50 mb-4 bg-white"
             />
             
             <div className="flex justify-end gap-2">
-              <button onClick={() => setDialog(null)} className="px-4 py-2 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)] rounded-lg transition-colors">
+              <button 
+                onClick={() => setDialog(null)} 
+                className="px-3.5 py-1.5 text-xs font-bold uppercase border border-black hover:bg-zinc-100 transition-colors text-black"
+              >
                 Annulla
               </button>
               <button 
                 onClick={handleExecuteDialog}
-                className="px-4 py-2 text-sm bg-[var(--color-accent)] text-white rounded-lg hover:bg-[var(--color-accent-hover)] transition-colors font-medium shadow-xs"
+                className="px-4 py-1.5 text-xs font-bold uppercase bg-black text-white border border-black hover:bg-zinc-800 transition-colors shadow-[2px_2px_0px_rgba(0,0,0,1)]"
               >
-                {dialog.type.startsWith('rename') ? 'Salva Modifiche' : 'Crea'}
+                {dialog.type.startsWith('rename') ? 'Salva' : 'Crea'}
               </button>
             </div>
           </div>
@@ -1270,22 +1474,22 @@ export default function FilesPage() {
 
       {/* First-Time Onboarding Modal */}
       {showOnboarding && (
-        <div className="modal-overlay">
-          <div className="modal-content max-w-md" onClick={e => e.stopPropagation()}>
-            <div className="w-10 h-10 rounded-xl bg-blue-50 text-[var(--color-accent)] flex items-center justify-center mb-4">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 font-mono">
+          <div className="bg-white border-2 border-black p-6 w-full max-w-md shadow-[8px_8px_0px_rgba(0,0,0,1)] text-black font-mono" onClick={e => e.stopPropagation()}>
+            <div className="w-10 h-10 border border-black bg-black text-white flex items-center justify-center mb-4">
               <School className="w-5 h-5" />
             </div>
 
-            <h3 className="text-[17px] font-bold text-[var(--color-text)] mb-1">
+            <h3 className="text-sm font-bold uppercase tracking-wider text-black mb-1">
               Configura il tuo spazio universitario
             </h3>
-            <p className="text-xs text-[var(--color-text-secondary)] mb-5">
+            <p className="text-xs text-zinc-600 mb-5">
               Inserisci la tua università e il tuo corso di studi. Creeremo automaticamente l&apos;albero delle cartelle per organizzare i tuoi corsi.
             </p>
 
             <form onSubmit={handleOnboardingSubmit} className="space-y-4">
               <div>
-                <label className="text-[12px] font-semibold text-[var(--color-text)] block mb-1">
+                <label className="text-xs font-bold uppercase tracking-wider text-black block mb-1">
                   Quale università frequenti?
                 </label>
                 <input 
@@ -1294,12 +1498,12 @@ export default function FilesPage() {
                   placeholder="Es. Politecnico di Milano, Università di Bologna..."
                   value={onboardingUni}
                   onChange={e => setOnboardingUni(e.target.value)}
-                  className="w-full border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm outline-none focus:border-[var(--color-accent)]"
+                  className="w-full border border-black px-3 py-2 text-xs font-mono outline-none focus:bg-zinc-50 bg-white"
                 />
               </div>
 
               <div>
-                <label className="text-[12px] font-semibold text-[var(--color-text)] block mb-1">
+                <label className="text-xs font-bold uppercase tracking-wider text-black block mb-1">
                   Quale corso di laurea frequenti?
                 </label>
                 <input 
@@ -1308,7 +1512,7 @@ export default function FilesPage() {
                   placeholder="Es. Ingegneria Informatica, Economia Aziendale..."
                   value={onboardingDegree}
                   onChange={e => setOnboardingDegree(e.target.value)}
-                  className="w-full border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm outline-none focus:border-[var(--color-accent)]"
+                  className="w-full border border-black px-3 py-2 text-xs font-mono outline-none focus:bg-zinc-50 bg-white"
                 />
               </div>
 
@@ -1316,14 +1520,14 @@ export default function FilesPage() {
                 <button 
                   type="button" 
                   onClick={() => setShowOnboarding(false)} 
-                  className="px-4 py-2 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)] rounded-lg transition-colors"
+                  className="px-3.5 py-1.5 text-xs font-bold uppercase border border-black hover:bg-zinc-100 transition-colors text-black"
                 >
                   Più tardi
                 </button>
                 <button 
                   type="submit"
                   disabled={onboardingLoading || !onboardingUni.trim() || !onboardingDegree.trim()}
-                  className="px-5 py-2 text-sm bg-[var(--color-accent)] text-white font-medium rounded-lg hover:bg-[var(--color-accent-hover)] transition-colors flex items-center gap-2 disabled:opacity-50"
+                  className="px-5 py-2 text-xs uppercase font-bold bg-black text-white border border-black hover:bg-zinc-800 transition-colors flex items-center gap-2 disabled:opacity-50 shadow-[2px_2px_0px_rgba(0,0,0,1)]"
                 >
                   {onboardingLoading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                   Crea Spazio Studio

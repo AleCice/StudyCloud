@@ -388,51 +388,52 @@ export default function FlashcardsPage() {
             {/* 3D Flip Card Component with KaTeX LaTeX Support */}
             <div 
               onClick={() => setIsFlipped(!isFlipped)}
-              className="w-full min-h-[360px] my-4 cursor-pointer perspective-1000 group select-text font-mono"
+              className="w-full min-h-[260px] sm:min-h-[360px] my-2 sm:my-4 cursor-pointer perspective-1000 group select-text font-mono"
             >
               <div 
-                className={`relative w-full min-h-[360px] transition-transform duration-500 transform-style-3d border-2 border-black shadow-[6px_6px_0px_rgba(0,0,0,1)] ${
+                className={`relative w-full min-h-[260px] sm:min-h-[360px] transition-transform duration-500 transform-style-3d border-2 border-black shadow-[4px_4px_0px_rgba(0,0,0,1)] ${
                   isFlipped ? 'rotate-y-180' : ''
                 }`}
               >
                 {/* FRONT: Domanda / Teorema / Concetto */}
-                <div className="absolute inset-0 w-full h-full bg-white text-black p-6 sm:p-8 flex flex-col justify-between backface-hidden">
-                  <div className="flex items-center justify-between border-b border-black pb-2.5">
-                    <span className="text-[10px] font-bold tracking-wider uppercase px-1.5 py-0.5 bg-black text-white">
+                <div className="absolute inset-0 w-full h-full bg-white text-black p-4 sm:p-8 flex flex-col justify-between backface-hidden">
+                  <div className="flex items-center justify-between border-b border-black pb-2">
+                    <span className="text-[9px] sm:text-[10px] font-bold tracking-wider uppercase px-1.5 py-0.5 bg-black text-white">
                       DOMANDA // CONCETTO
                     </span>
-                    <div className="flex items-center gap-1.5 text-xs text-zinc-500 group-hover:text-black transition-colors font-bold uppercase">
-                      <RotateCw className="w-3.5 h-3.5" />
-                      <span>Gira carta</span>
+                    <div className="flex items-center gap-1.5 text-[11px] sm:text-xs text-zinc-500 group-hover:text-black transition-colors font-bold uppercase">
+                      <RotateCw className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                      <span>Gira</span>
                     </div>
                   </div>
 
-                  <div className="my-auto text-center px-4 py-6 overflow-y-auto max-h-[220px]">
-                    <div className="text-base sm:text-lg font-bold text-black leading-relaxed">
+                  <div className="my-auto text-center px-2 sm:px-4 py-3 sm:py-6 overflow-y-auto max-h-[160px] sm:max-h-[220px]">
+                    <div className="text-sm sm:text-lg font-bold text-black leading-snug sm:leading-relaxed">
                       <MarkdownRenderer content={currentCard?.front || ''} />
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between pt-2.5 border-t border-zinc-200 text-[10px] text-zinc-400 font-mono">
-                    <span>Premi Spazio per girare</span>
+                  <div className="flex items-center justify-between pt-2 border-t border-zinc-200 text-[10px] text-zinc-400 font-mono">
+                    <span className="hidden sm:inline">Premi Spazio per girare</span>
+                    <span className="sm:hidden text-zinc-500">Tocca per girare</span>
                     <span className="font-bold text-black uppercase">Fronte</span>
                   </div>
                 </div>
 
                 {/* BACK: Risposta / Soluzione / Formule LaTeX KaTeX */}
-                <div className="absolute inset-0 w-full h-full bg-black text-white p-6 sm:p-8 flex flex-col justify-between backface-hidden rotate-y-180 border-2 border-black">
-                  <div className="flex items-center justify-between border-b border-zinc-800 pb-2.5">
-                    <span className="text-[10px] font-bold tracking-wider uppercase px-1.5 py-0.5 bg-white text-black">
+                <div className="absolute inset-0 w-full h-full bg-black text-white p-4 sm:p-8 flex flex-col justify-between backface-hidden rotate-y-180 border-2 border-black">
+                  <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
+                    <span className="text-[9px] sm:text-[10px] font-bold tracking-wider uppercase px-1.5 py-0.5 bg-white text-black">
                       RISPOSTA // SOLUZIONE
                     </span>
-                    <div className="flex items-center gap-1.5 text-xs text-zinc-400 group-hover:text-white transition-colors font-bold uppercase">
-                      <RotateCw className="w-3.5 h-3.5" />
+                    <div className="flex items-center gap-1.5 text-[11px] sm:text-xs text-zinc-400 group-hover:text-white transition-colors font-bold uppercase">
+                      <RotateCw className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                       <span>Fronte</span>
                     </div>
                   </div>
 
-                  <div className="my-auto text-center px-4 py-4 overflow-y-auto max-h-[200px]">
-                    <div className="text-sm sm:text-base font-normal text-zinc-100 leading-relaxed font-sans">
+                  <div className="my-auto text-center px-2 sm:px-4 py-2 sm:py-4 overflow-y-auto max-h-[140px] sm:max-h-[200px]">
+                    <div className="text-xs sm:text-base font-normal text-zinc-100 leading-snug sm:leading-relaxed font-sans">
                       <MarkdownRenderer content={currentCard?.back || ''} className="text-zinc-100" />
                     </div>
                   </div>

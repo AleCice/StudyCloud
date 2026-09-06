@@ -34,7 +34,7 @@ export default function GenerateArtifactModal({ isOpen, onClose, initialCourseId
   const [depth, setDepth] = useState<'short' | 'standard' | 'deep'>('standard')
   const [formatStyle, setFormatStyle] = useState<'academic' | 'schematic' | 'qa'>('academic')
   const [targetExport, setTargetExport] = useState<'pdf' | 'docx' | 'markdown' | 'pptx'>('pdf')
-  const [includeFormulas, setIncludeFormulas] = useState(true)
+  const includeFormulas = true
   const [includeTables, setIncludeTables] = useState(true)
   const [includeGlossary, setIncludeGlossary] = useState(false)
 
@@ -44,7 +44,31 @@ export default function GenerateArtifactModal({ isOpen, onClose, initialCourseId
   
   const [topicPrompt, setTopicPrompt] = useState('')
   const [loading, setLoading] = useState(false)
+  const [generationStep, setGenerationStep] = useState<number>(1)
+  const [elapsedSeconds, setElapsedSeconds] = useState<number>(0)
   const [error, setError] = useState('')
+
+  // Timer ed avanzamento step durante la generazione
+  useEffect(() => {
+    let timerInterval: NodeJS.Timeout
+    let stepInterval: NodeJS.Timeout
+    if (loading) {
+      setElapsedSeconds(0)
+      setGenerationStep(1)
+
+      timerInterval = setInterval(() => {
+        setElapsedSeconds(prev => prev + 1)
+      }, 1000)
+
+      stepInterval = setInterval(() => {
+        setGenerationStep(prev => (prev < 4 ? prev + 1 : 4))
+      }, 2800)
+    }
+    return () => {
+      clearInterval(timerInterval)
+      clearInterval(stepInterval)
+    }
+  }, [loading])
 
   // Caricamento corsi e documenti
   useEffect(() => {
@@ -120,7 +144,7 @@ export default function GenerateArtifactModal({ isOpen, onClose, initialCourseId
         topicPrompt: topicPrompt.trim() || undefined,
         depth,
         formatStyle,
-        includeFormulas,
+        includeFormulas: true,
         includeTables,
         includeGlossary,
         targetExport,
@@ -128,8 +152,11 @@ export default function GenerateArtifactModal({ isOpen, onClose, initialCourseId
         userModel
       })
 
-      onClose()
-      router.push(`/studio/${artifact.id}`)
+      setGenerationStep(4)
+      setTimeout(() => {
+        onClose()
+        router.push(`/studio/${artifact.id}`)
+      }, 400)
     } catch (err: any) {
       console.error("Errore generazione Studio:", err)
       setError(err.message || "Errore durante la generazione.")
@@ -174,10 +201,102 @@ export default function GenerateArtifactModal({ isOpen, onClose, initialCourseId
           </div>
         )}
 
-        <form onSubmit={handleGenerate} className="space-y-4 text-xs">
-          
-          {/* 1. Tipo Principale */}
-          <div>
+        {loading ? (
+          <div className="py-4 space-y-5 animate-in fade-in duration-200">
+            <div className="border border-black p-3 bg-zinc-50 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 bg-black animate-ping" />
+                <span className="text-xs font-bold uppercase tracking-wider">
+                  PIPELINE AI // {type === 'presentation' ? 'SLIDE ACCADEMICHE' : 'DISPENSA DIDATTICA'}
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5 font-mono text-xs border border-black bg-white px-2 py-0.5 font-bold shadow-[1px_1px_0px_rgba(0,0,0,1)]">
+                <span>{String(Math.floor(elapsedSeconds / 60)).padStart(2, '0')}:{String(elapsedSeconds % 60).padStart(2, '0')}</span>
+              </div>
+            </div>
+
+            <div className="space-y-2.5">
+              {[
+                {
+                  step: 1,
+                  title: "1. Analisi e Indicizzazione Fonti RAG",
+                  desc: "Scansione degli appunti della Knowledge Base e recupero concetti chiave."
+                },
+                {
+                  step: 2,
+                  title: "2. Architettura e Pianificazione Scaletta",
+                  desc: "Strutturazione logica delle diapositive e gerarchia delle sezioni d'esame."
+                },
+                {
+                  step: 3,
+                  title: "3. Sintesi Accademica e Formule KaTeX",
+                  desc: "Dimostrazioni analitiche, equazioni LaTeX ($$), teoremi e tabelle di sintesi."
+                },
+                {
+                  step: 4,
+                  title: "4. Composizione Tipografica e Salvataggio",
+                  desc: "Validazione layout, verifica sintassi e persistenza nel workspace didattico."
+                }
+              ].map(item => {
+                const isCompleted = generationStep > item.step
+                const isCurrent = generationStep === item.step
+                return (
+                  <div
+                    key={item.step}
+                    className={`p-3 border transition-all ${
+                      isCurrent
+                        ? 'border-black bg-white shadow-[3px_3px_0px_rgba(0,0,0,1)] ring-1 ring-black'
+                        : isCompleted
+                        ? 'border-zinc-300 bg-zinc-50 text-zinc-700'
+                        : 'border-zinc-200 bg-white opacity-40 text-zinc-400'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center gap-2">
+                        {isCompleted ? (
+                          <div className="w-4 h-4 bg-black text-white flex items-center justify-center text-[10px] font-bold">
+                            ✓
+                          </div>
+                        ) : isCurrent ? (
+                          <Loader2 className="w-4 h-4 animate-spin text-black" />
+                        ) : (
+                          <div className="w-4 h-4 border border-zinc-300 text-zinc-400 flex items-center justify-center text-[10px]">
+                            {item.step}
+                          </div>
+                        )}
+                        <span className="text-xs font-bold uppercase tracking-tight">
+                          {item.title}
+                        </span>
+                      </div>
+                      {isCurrent && (
+                        <span className="text-[10px] font-bold uppercase bg-black text-white px-1.5 py-0.5">
+                          In corso...
+                        </span>
+                      )}
+                      {isCompleted && (
+                        <span className="text-[10px] font-bold text-zinc-500 uppercase">
+                          Completato
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[11px] font-sans text-zinc-600 pl-6">
+                      {item.desc}
+                    </p>
+                  </div>
+                )
+              })}
+            </div>
+
+            <div className="p-3 border border-black bg-zinc-100 text-[11px] text-zinc-700 flex items-center justify-between">
+              <span>Elaborazione neurale in corso... non chiudere la schermata.</span>
+              <span className="font-mono font-bold">Step {generationStep}/4</span>
+            </div>
+          </div>
+        ) : (
+          <form onSubmit={handleGenerate} className="space-y-4 text-xs">
+            
+            {/* 1. Tipo Principale */}
+            <div>
             <label className="font-bold uppercase tracking-wider block mb-1.5 text-[11px]">
               1. Tipo
             </label>
@@ -356,22 +475,12 @@ export default function GenerateArtifactModal({ isOpen, onClose, initialCourseId
             </div>
           </div>
 
-          {/* 4. Opzioni Contenuto Rapide (Checkbox puliti) */}
+          {/* 4. Opzioni Contenuto Rapide */}
           <div>
             <label className="font-bold uppercase tracking-wider block mb-1 text-[11px]">
-              Contenuto Tecnico
+              Contenuto Tecnico (Formule KaTeX sempre incluse)
             </label>
             <div className="flex flex-wrap items-center gap-3">
-              <label className="flex items-center gap-1.5 cursor-pointer select-none text-[11px]">
-                <input
-                  type="checkbox"
-                  checked={includeFormulas}
-                  onChange={e => setIncludeFormulas(e.target.checked)}
-                  className="accent-black w-3.5 h-3.5"
-                />
-                <span>Formule KaTeX ($$)</span>
-              </label>
-
               <label className="flex items-center gap-1.5 cursor-pointer select-none text-[11px]">
                 <input
                   type="checkbox"
@@ -492,6 +601,7 @@ export default function GenerateArtifactModal({ isOpen, onClose, initialCourseId
             </button>
           </div>
         </form>
+        )}
       </div>
     </div>
   )

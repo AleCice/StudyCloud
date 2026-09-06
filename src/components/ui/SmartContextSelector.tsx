@@ -78,11 +78,11 @@ export default function SmartContextSelector({ value, onChange, className = '', 
   }
 
   const getDisplayIcon = () => {
-    if (!value || value.type === 'all' || !value.id) return <Globe className="w-3.5 h-3.5 text-blue-500 shrink-0" />
-    if (value.type === 'course') return <BookOpen className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
-    if (value.type === 'folder' || value.type === 'subfolder') return <Folder className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-    if (value.type === 'doc') return <FileText className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-    return <Layers className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+    if (!value || value.type === 'all' || !value.id) return <Globe className="w-3.5 h-3.5 text-black shrink-0" />
+    if (value.type === 'course') return <BookOpen className="w-3.5 h-3.5 text-black shrink-0" />
+    if (value.type === 'folder' || value.type === 'subfolder') return <Folder className="w-3.5 h-3.5 text-black shrink-0" />
+    if (value.type === 'doc') return <FileText className="w-3.5 h-3.5 text-black shrink-0" />
+    return <Layers className="w-3.5 h-3.5 text-black shrink-0" />
   }
 
   // Rendering ricorsivo di cartelle e sottocartelle
@@ -92,7 +92,7 @@ export default function SmartContextSelector({ value, onChange, className = '', 
     const hasChildren = folder.subfolders.length > 0 || folder.documents.length > 0
 
     return (
-      <div key={folder.id} className="select-none">
+      <div key={folder.id} className="select-none font-mono">
         <div
           onClick={() => handleSelect({
             type: folder.parent_id ? 'subfolder' : 'folder',
@@ -100,10 +100,10 @@ export default function SmartContextSelector({ value, onChange, className = '', 
             name: folder.name,
             path: folder.path
           })}
-          className={`flex items-center justify-between py-1.5 px-2 rounded-lg cursor-pointer transition-colors text-xs ${
+          className={`flex items-center justify-between py-1.5 px-2 cursor-pointer transition-colors text-xs border-b border-zinc-100 ${
             isSelected 
-              ? 'bg-blue-50 text-blue-900 font-semibold' 
-              : 'hover:bg-[var(--color-bg-hover)] text-[var(--color-text)]'
+              ? 'bg-black text-white font-bold' 
+              : 'hover:bg-zinc-100 text-black'
           }`}
           style={{ paddingLeft: `${depth * 14 + 8}px` }}
         >
@@ -112,7 +112,7 @@ export default function SmartContextSelector({ value, onChange, className = '', 
               <button
                 type="button"
                 onClick={(e) => toggleFolder(folder.id, e)}
-                className="p-0.5 hover:bg-slate-200 rounded text-slate-500"
+                className={`p-0.5 hover:bg-zinc-200 rounded ${isSelected ? 'text-white' : 'text-zinc-500'}`}
               >
                 {isExpanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
               </button>
@@ -120,24 +120,26 @@ export default function SmartContextSelector({ value, onChange, className = '', 
               <span className="w-4" />
             )}
             {isExpanded ? (
-              <FolderOpen className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+              <FolderOpen className={`w-3.5 h-3.5 shrink-0 ${isSelected ? 'text-white' : 'text-black'}`} />
             ) : (
-              <Folder className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+              <Folder className={`w-3.5 h-3.5 shrink-0 ${isSelected ? 'text-white' : 'text-black'}`} />
             )}
             <span className="truncate">{folder.name}</span>
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
-            <span className="text-[10px] text-[var(--color-text-muted)] bg-slate-100 px-1.5 py-0.5 rounded">
+            <span className={`text-[10px] px-1.5 py-0.5 border ${
+              isSelected ? 'border-white text-white' : 'border-zinc-300 text-zinc-600 bg-zinc-50'
+            }`}>
               {folder.totalDocsCount} doc
             </span>
-            {isSelected && <Check className="w-3.5 h-3.5 text-blue-600" />}
+            {isSelected && <Check className="w-3.5 h-3.5 text-white" />}
           </div>
         </div>
 
         {/* Sottocartelle & Documenti figli */}
         {isExpanded && (
-          <div className="space-y-0.5 mt-0.5">
+          <div className="space-y-0.5">
             {folder.subfolders.map(sub => renderFolderItem(sub, depth + 1))}
             {folder.documents.map(doc => {
               const isDocSelected = value.type === 'doc' && value.id === doc.id
@@ -149,18 +151,18 @@ export default function SmartContextSelector({ value, onChange, className = '', 
                     id: doc.id,
                     name: doc.title
                   })}
-                  className={`flex items-center justify-between py-1.5 px-2 rounded-lg cursor-pointer transition-colors text-xs ${
+                  className={`flex items-center justify-between py-1.5 px-2 cursor-pointer transition-colors text-xs border-b border-zinc-100 ${
                     isDocSelected
-                      ? 'bg-blue-50 text-blue-900 font-semibold'
-                      : 'hover:bg-[var(--color-bg-hover)] text-[var(--color-text-secondary)]'
+                      ? 'bg-black text-white font-bold'
+                      : 'hover:bg-zinc-100 text-zinc-700'
                   }`}
                   style={{ paddingLeft: `${(depth + 1) * 14 + 16}px` }}
                 >
                   <div className="flex items-center gap-1.5 truncate flex-1 min-w-0">
-                    <FileText className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                    <FileText className={`w-3.5 h-3.5 shrink-0 ${isDocSelected ? 'text-white' : 'text-zinc-500'}`} />
                     <span className="truncate">{doc.title}</span>
                   </div>
-                  {isDocSelected && <Check className="w-3.5 h-3.5 text-blue-600 shrink-0" />}
+                  {isDocSelected && <Check className="w-3.5 h-3.5 text-white shrink-0" />}
                 </div>
               )
             })}
@@ -172,54 +174,64 @@ export default function SmartContextSelector({ value, onChange, className = '', 
 
   return (
     <div className={`relative ${className}`}>
-      {/* Trigger Button */}
+      {/* Desktop Trigger Button */}
       <button
         type="button"
         onClick={() => setIsOpen(true)}
-        className="flex items-center gap-1.5 bg-white border border-[var(--color-border)] rounded-lg px-2.5 py-1.5 text-xs text-[var(--color-text)] hover:border-blue-400 transition-colors shadow-2xs max-w-[260px]"
-        title="Seleziona su quale corso, cartella o documento basare l'AI"
+        className="hidden sm:flex items-center gap-1.5 bg-white border border-black px-2.5 py-1 text-xs font-mono font-bold text-black hover:bg-zinc-100 transition-colors shadow-[1px_1px_0px_rgba(0,0,0,1)] max-w-[240px]"
+        title="Seleziona contesto didattico (corso, cartella o documento)"
       >
         {getDisplayIcon()}
-        <span className="truncate font-medium">{getDisplayLabel()}</span>
-        <ChevronDown className="w-3 h-3 text-[var(--color-text-muted)] shrink-0 ml-0.5" />
+        <span className="truncate font-mono">{getDisplayLabel()}</span>
+        <ChevronDown className="w-3 h-3 text-black shrink-0 ml-0.5" />
       </button>
 
-      {/* Modal / Popover Selector */}
+      {/* Mobile Square Trigger Button (identico a esportazione) */}
+      <button
+        type="button"
+        onClick={() => setIsOpen(true)}
+        className="sm:hidden p-1.5 border border-black bg-white hover:bg-black hover:text-white transition-colors text-black flex items-center justify-center shadow-[1px_1px_0px_rgba(0,0,0,1)]"
+        title={`Contesto: ${getDisplayLabel()}`}
+      >
+        <Layers className="w-3.5 h-3.5" />
+      </button>
+
+      {/* Modal Selector */}
       {isOpen && (
-        <div className="modal-overlay" onClick={() => setIsOpen(false)}>
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-3 sm:p-4 backdrop-blur-xs" onClick={() => setIsOpen(false)}>
           <div 
-            className="modal-content max-w-lg p-0 overflow-hidden shadow-2xl rounded-2xl" 
+            className="bg-white border-2 border-black shadow-[4px_4px_0px_rgba(0,0,0,1)] max-w-lg w-full p-0 overflow-hidden font-mono" 
             onClick={e => e.stopPropagation()}
           >
             {/* Header */}
-            <div className="p-4 border-b border-[var(--color-border)] bg-slate-50/70 flex items-center justify-between">
+            <div className="p-3.5 border-b border-black bg-zinc-50 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className="p-1.5 bg-blue-100 text-blue-600 rounded-lg">
+                <div className="p-1.5 bg-black text-white border border-black">
                   <Layers className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-[var(--color-text)]">Seleziona Contesto Didattico</h3>
-                  <p className="text-[11px] text-[var(--color-text-muted)]">Scegli la materia, la cartella o il file su cui l&apos;AI interroga i tuoi appunti</p>
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-black">Seleziona Contesto Didattico</h3>
+                  <p className="text-[10px] text-zinc-500">Scegli la materia, cartella o file su cui basare l&apos;AI</p>
                 </div>
               </div>
-              <button onClick={() => setIsOpen(false)} className="p-1 text-[var(--color-text-muted)] hover:text-[var(--color-text)] rounded">
+              <button onClick={() => setIsOpen(false)} className="p-1 border border-black hover:bg-black hover:text-white transition-colors text-black">
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             {/* Search filter */}
-            <div className="p-3 border-b border-[var(--color-border)] bg-white">
-              <div className="flex items-center gap-2 bg-slate-50 border border-[var(--color-border)] rounded-lg px-3 py-1.5 text-xs">
-                <Search className="w-3.5 h-3.5 text-[var(--color-text-muted)] shrink-0" />
+            <div className="p-3 border-b border-black bg-white">
+              <div className="flex items-center gap-2 bg-zinc-50 border border-black px-3 py-1.5 text-xs">
+                <Search className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
                 <input
                   type="text"
-                  placeholder="Cerca per corso, cartella o documento..."
+                  placeholder="Cerca corso, cartella o documento..."
                   value={search}
                   onChange={e => setSearch(e.target.value)}
-                  className="w-full bg-transparent outline-none text-[var(--color-text)] placeholder-[var(--color-text-muted)]"
+                  className="w-full bg-transparent outline-none text-black placeholder-zinc-400 font-mono text-xs"
                 />
                 {search && (
-                  <button onClick={() => setSearch('')} className="p-0.5 text-slate-400 hover:text-slate-600">
+                  <button onClick={() => setSearch('')} className="p-0.5 text-zinc-500 hover:text-black">
                     <X className="w-3 h-3" />
                   </button>
                 )}
@@ -227,24 +239,24 @@ export default function SmartContextSelector({ value, onChange, className = '', 
             </div>
 
             {/* Tree Items List */}
-            <div className="max-h-96 overflow-y-auto p-3 space-y-1 bg-white divide-y divide-slate-100">
+            <div className="max-h-80 overflow-y-auto p-2 space-y-1 bg-white">
               {/* Option 1: Global / Tutti i Materiali */}
               <div
                 onClick={() => handleSelect({ type: 'all', name: 'Tutti i materiali' })}
-                className={`flex items-center justify-between p-2.5 rounded-xl cursor-pointer transition-colors text-xs ${
+                className={`flex items-center justify-between p-2.5 border cursor-pointer transition-colors text-xs ${
                   value.type === 'all' || !value.id
-                    ? 'bg-blue-50 text-blue-900 font-semibold'
-                    : 'hover:bg-[var(--color-bg-hover)] text-[var(--color-text)]'
+                    ? 'bg-black text-white border-black font-bold'
+                    : 'bg-white border-zinc-200 hover:border-black text-black'
                 }`}
               >
                 <div className="flex items-center gap-2">
-                  <Globe className="w-4 h-4 text-blue-600 shrink-0" />
+                  <Globe className={`w-4 h-4 shrink-0 ${value.type === 'all' || !value.id ? 'text-white' : 'text-black'}`} />
                   <div>
-                    <p className="font-semibold text-xs">Tutti i materiali universitari</p>
-                    <p className="text-[10px] text-[var(--color-text-muted)]">Cerca trasversalmente in tutti i corsi e cartelle</p>
+                    <p className="font-bold text-xs uppercase">Tutti i materiali universitari</p>
+                    <p className={`text-[10px] ${value.type === 'all' || !value.id ? 'text-zinc-300' : 'text-zinc-500'}`}>Cerca trasversalmente in tutti i corsi</p>
                   </div>
                 </div>
-                {(value.type === 'all' || !value.id) && <Check className="w-4 h-4 text-blue-600 shrink-0" />}
+                {(value.type === 'all' || !value.id) && <Check className="w-4 h-4 text-white shrink-0" />}
               </div>
 
               {/* Courses & Folders Tree */}
@@ -254,11 +266,11 @@ export default function SmartContextSelector({ value, onChange, className = '', 
                   const isCourseExpanded = expandedCourses.has(course.id)
 
                   return (
-                    <div key={course.id} className="border border-slate-200/80 rounded-xl overflow-hidden bg-slate-50/40">
+                    <div key={course.id} className="border border-black bg-zinc-50/50">
                       {/* Course Row */}
                       <div
-                        className={`flex items-center justify-between p-2.5 cursor-pointer text-xs transition-colors ${
-                          isCourseSelected ? 'bg-blue-100/70 text-blue-900 font-semibold' : 'hover:bg-slate-100/80 text-[var(--color-text)]'
+                        className={`flex items-center justify-between p-2 cursor-pointer text-xs transition-colors ${
+                          isCourseSelected ? 'bg-black text-white font-bold' : 'hover:bg-zinc-100 text-black'
                         }`}
                         onClick={() => handleSelect({ type: 'course', id: course.id, name: course.name })}
                       >
@@ -266,27 +278,29 @@ export default function SmartContextSelector({ value, onChange, className = '', 
                           <button
                             type="button"
                             onClick={(e) => toggleCourse(course.id, e)}
-                            className="p-0.5 hover:bg-slate-200 rounded text-slate-500 shrink-0"
+                            className={`p-0.5 rounded shrink-0 ${isCourseSelected ? 'text-white' : 'text-zinc-600'}`}
                           >
                             {isCourseExpanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
                           </button>
-                          <BookOpen className="w-4 h-4 text-indigo-600 shrink-0" />
+                          <BookOpen className={`w-4 h-4 shrink-0 ${isCourseSelected ? 'text-white' : 'text-black'}`} />
                           <span className="font-bold text-xs truncate">Corso: {course.name}</span>
                         </div>
 
                         <div className="flex items-center gap-2 shrink-0">
-                          <span className="text-[10px] text-slate-500 bg-white border border-slate-200 px-2 py-0.5 rounded-full font-medium">
+                          <span className={`text-[10px] px-1.5 py-0.5 border ${
+                            isCourseSelected ? 'border-white text-white' : 'border-zinc-300 bg-white text-zinc-600'
+                          }`}>
                             {course.totalDocsCount} doc
                           </span>
-                          {isCourseSelected && <Check className="w-3.5 h-3.5 text-blue-600" />}
+                          {isCourseSelected && <Check className="w-3.5 h-3.5 text-white" />}
                         </div>
                       </div>
 
                       {/* Nested Folders & Docs in Course */}
                       {isCourseExpanded && (
-                        <div className="p-1.5 bg-white border-t border-slate-200/70 space-y-0.5">
+                        <div className="p-1 bg-white border-t border-black space-y-0.5">
                           {course.folders.length === 0 && course.rootDocuments.length === 0 ? (
-                            <p className="text-[11px] text-slate-400 py-2 px-3 italic">Nessuna cartella o documento in questo corso</p>
+                            <p className="text-[10px] text-zinc-400 py-1.5 px-2 italic">Nessun materiale in questo corso</p>
                           ) : (
                             <>
                               {course.folders.map(folder => renderFolderItem(folder, 1))}
@@ -300,17 +314,17 @@ export default function SmartContextSelector({ value, onChange, className = '', 
                                       id: doc.id,
                                       name: doc.title
                                     })}
-                                    className={`flex items-center justify-between py-1.5 px-3 rounded-lg cursor-pointer transition-colors text-xs ${
+                                    className={`flex items-center justify-between py-1.5 px-2 cursor-pointer transition-colors text-xs border-b border-zinc-100 ${
                                       isDocSelected
-                                        ? 'bg-blue-50 text-blue-900 font-semibold'
-                                        : 'hover:bg-[var(--color-bg-hover)] text-[var(--color-text-secondary)]'
+                                        ? 'bg-black text-white font-bold'
+                                        : 'hover:bg-zinc-100 text-zinc-700'
                                     }`}
                                   >
                                     <div className="flex items-center gap-1.5 truncate flex-1 min-w-0">
-                                      <FileText className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                                      <FileText className={`w-3.5 h-3.5 shrink-0 ${isDocSelected ? 'text-white' : 'text-zinc-500'}`} />
                                       <span className="truncate">{doc.title}</span>
                                     </div>
-                                    {isDocSelected && <Check className="w-3.5 h-3.5 text-blue-600 shrink-0" />}
+                                    {isDocSelected && <Check className="w-3.5 h-3.5 text-white shrink-0" />}
                                   </div>
                                 )
                               })}
@@ -325,14 +339,14 @@ export default function SmartContextSelector({ value, onChange, className = '', 
             </div>
 
             {/* Footer */}
-            <div className="p-3 border-t border-[var(--color-border)] bg-slate-50 flex items-center justify-between text-xs">
-              <span className="text-[11px] text-[var(--color-text-muted)] truncate max-w-xs">
-                Contesto attivo: <strong className="text-[var(--color-text)]">{getDisplayLabel()}</strong>
+            <div className="p-3 border-t border-black bg-zinc-50 flex items-center justify-between text-xs font-mono">
+              <span className="text-[10px] text-zinc-600 truncate max-w-[240px]">
+                Attivo: <strong className="text-black">{getDisplayLabel()}</strong>
               </span>
               <button
                 type="button"
                 onClick={() => setIsOpen(false)}
-                className="px-3.5 py-1.5 bg-[var(--color-accent)] text-white rounded-lg font-medium hover:bg-[var(--color-accent-hover)] transition-colors shadow-2xs"
+                className="px-3 py-1 bg-black text-white text-xs uppercase font-bold border border-black hover:bg-zinc-800 transition-colors"
               >
                 Chiudi
               </button>

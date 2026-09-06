@@ -86,11 +86,11 @@ export default function StudioPage() {
   })
 
   return (
-    <div className="flex-1 overflow-auto bg-white text-black min-h-screen">
+    <div className="flex-1 overflow-y-auto overflow-x-hidden bg-white text-black min-h-full">
       {/* Top Header */}
-      <div className="border-b border-black px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white sticky top-0 z-20">
+      <div className="border-b border-black px-4 sm:px-6 py-3 sm:py-4 flex flex-col md:flex-row md:items-center justify-between gap-3 bg-white sticky top-0 z-20">
         <div>
-          <h1 className="text-lg font-bold tracking-tight text-black font-mono uppercase">
+          <h1 className="text-base sm:text-lg font-bold tracking-tight text-black font-mono uppercase">
             Studio // Documenti & Slide
           </h1>
         </div>
@@ -98,65 +98,62 @@ export default function StudioPage() {
         {/* Quick actions */}
         <div className="flex flex-wrap items-center gap-2 font-mono">
           <button
-            type="button"
             onClick={() => {
               setGenerateInitialType('presentation')
               setIsGenerateModalOpen(true)
             }}
-            className="border border-black bg-black text-white hover:bg-zinc-800 transition-colors px-3 py-1.5 text-xs font-bold uppercase flex items-center gap-1.5 shadow-[2px_2px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px]"
+            className="flex items-center gap-1.5 bg-black text-white hover:bg-zinc-800 px-3 py-1.5 text-xs font-bold uppercase transition-colors shadow-[2px_2px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] border border-black"
           >
             <Sparkles className="w-3.5 h-3.5" />
-            Genera
+            <span>Genera AI</span>
           </button>
 
           <button
-            type="button"
             onClick={() => handleCreateEmpty('presentation')}
-            className="border border-black bg-white hover:bg-zinc-100 transition-colors px-3 py-1.5 text-xs font-bold uppercase flex items-center gap-1.5 shadow-[2px_2px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px]"
+            className="flex items-center gap-1.5 border border-black bg-white hover:bg-zinc-100 text-black px-2.5 py-1.5 text-xs font-bold uppercase transition-colors shadow-[2px_2px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px]"
           >
             <Presentation className="w-3.5 h-3.5" />
-            + Slide
+            <span className="hidden sm:inline">Nuove Slide</span>
           </button>
 
           <button
-            type="button"
             onClick={() => handleCreateEmpty('document')}
-            className="border border-black bg-white hover:bg-zinc-100 transition-colors px-3 py-1.5 text-xs font-bold uppercase flex items-center gap-1.5 shadow-[2px_2px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px]"
+            className="flex items-center gap-1.5 border border-black bg-white hover:bg-zinc-100 text-black px-2.5 py-1.5 text-xs font-bold uppercase transition-colors shadow-[2px_2px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px]"
           >
             <FileText className="w-3.5 h-3.5" />
-            + Dispensa
+            <span className="hidden sm:inline">Nuovo Doc</span>
           </button>
         </div>
       </div>
 
-      <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
+      <div className="p-3 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-4 sm:space-y-6">
         
-        {/* KPI Quick Stats - Semplice e senza fuffa */}
-        <div className="grid grid-cols-3 gap-3 font-mono">
-          <div className="border border-black p-3.5 bg-white">
-            <span className="text-[10px] uppercase font-bold text-zinc-500 block mb-0.5">Lavori Totali</span>
-            <p className="text-2xl font-bold">{artifacts.length}</p>
+        {/* KPI Quick Stats - Compatto su mobile */}
+        <div className="grid grid-cols-3 gap-2 sm:gap-3 font-mono">
+          <div className="border border-black p-2 sm:p-3.5 bg-white shadow-[2px_2px_0px_rgba(0,0,0,1)]">
+            <span className="text-[9px] sm:text-[10px] uppercase font-bold text-zinc-500 block mb-0.5 truncate">Lavori Totali</span>
+            <p className="text-lg sm:text-2xl font-bold">{artifacts.length}</p>
           </div>
 
-          <div className="border border-black p-3.5 bg-white">
-            <span className="text-[10px] uppercase font-bold text-zinc-500 block mb-0.5">Presentazioni (Slide)</span>
-            <p className="text-2xl font-bold">{artifacts.filter(a => a.type === 'presentation').length}</p>
+          <div className="border border-black p-2 sm:p-3.5 bg-white shadow-[2px_2px_0px_rgba(0,0,0,1)]">
+            <span className="text-[9px] sm:text-[10px] uppercase font-bold text-zinc-500 block mb-0.5 truncate">Slide</span>
+            <p className="text-lg sm:text-2xl font-bold">{artifacts.filter(a => a.type === 'presentation').length}</p>
           </div>
 
-          <div className="border border-black p-3.5 bg-white">
-            <span className="text-[10px] uppercase font-bold text-zinc-500 block mb-0.5">Dispense & Schemi</span>
-            <p className="text-2xl font-bold">{artifacts.filter(a => a.type === 'document').length}</p>
+          <div className="border border-black p-2 sm:p-3.5 bg-white shadow-[2px_2px_0px_rgba(0,0,0,1)]">
+            <span className="text-[9px] sm:text-[10px] uppercase font-bold text-zinc-500 block mb-0.5 truncate">Dispense</span>
+            <p className="text-lg sm:text-2xl font-bold">{artifacts.filter(a => a.type === 'document').length}</p>
           </div>
         </div>
 
         {/* Filters & Tabs Bar */}
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-black pb-3 font-mono text-xs">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-black pb-3 font-mono text-[11px] sm:text-xs">
           {/* Tabs */}
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 flex-wrap">
             <button
               type="button"
               onClick={() => setActiveTab('all')}
-              className={`px-3 py-1.5 border font-bold uppercase transition-colors ${
+              className={`px-2.5 py-1 sm:px-3 sm:py-1.5 border font-bold uppercase transition-colors ${
                 activeTab === 'all' ? 'border-black bg-black text-white' : 'border-zinc-300 hover:border-black bg-white'
               }`}
             >

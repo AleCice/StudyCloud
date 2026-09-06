@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { 
   ArrowLeft, Save, Play, Plus, Trash2, Layout, FileText, 
   Presentation, Check, Clock, Eye, Edit3, ArrowUp, ArrowDown, 
-  Sparkles, Layers, Code, Quote, Hash, Printer, Split
+  Sparkles, Layers, Code, Quote, Hash, Printer, Split, Loader2
 } from 'lucide-react'
 import { 
   getStudioArtifact, 
@@ -18,7 +18,6 @@ import {
 } from '../actions'
 import PresentationViewer from '@/components/studio/PresentationViewer'
 import DocumentViewer from '@/components/studio/DocumentViewer'
-import { exportDocumentToDocx, exportPresentationToPptx } from '@/lib/studio/export'
 
 export default function StudioDetailPage() {
   const params = useParams()
@@ -28,7 +27,7 @@ export default function StudioDetailPage() {
   const [artifact, setArtifact] = useState<StudioArtifact | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [savedSuccess, setSavedSuccess] = useState(false)
+  const [isDirty, setIsDirty] = useState(false)
 
   // Modalità: 'preview' (visualizzatore interattivo) o 'edit' (editor split-screen)
   const [viewMode, setViewMode] = useState<'preview' | 'edit'>('preview')
@@ -42,6 +41,7 @@ export default function StudioDetailPage() {
     getStudioArtifact(id).then(art => {
       if (art) {
         setArtifact(art)
+        setIsDirty(false)
       } else {
         router.push('/studio')
       }
@@ -60,8 +60,7 @@ export default function StudioDetailPage() {
       }
       const res = await saveStudioArtifact(payload)
       setArtifact(res)
-      setSavedSuccess(true)
-      setTimeout(() => setSavedSuccess(false), 2000)
+      setIsDirty(false)
     } catch (err) {
       console.error("Errore salvataggio:", err)
     } finally {
@@ -85,6 +84,7 @@ export default function StudioDetailPage() {
       }
     }
     setArtifact(prev => prev ? { ...prev, ...updated } : prev)
+    setIsDirty(true)
   }
 
   const handleAddSlide = () => {
@@ -106,6 +106,7 @@ export default function StudioDetailPage() {
     }
     setArtifact(prev => prev ? { ...prev, ...updated } : prev)
     setSelectedSlideIndex(updatedSlides.length - 1)
+    setIsDirty(true)
   }
 
   const handleDeleteSlide = (slideIndex: number) => {
@@ -120,6 +121,7 @@ export default function StudioDetailPage() {
     }
     setArtifact(prev => prev ? { ...prev, ...updated } : prev)
     setSelectedSlideIndex(prev => Math.max(0, Math.min(updatedSlides.length - 1, prev)))
+    setIsDirty(true)
   }
 
   const handleMoveSlide = (slideIndex: number, direction: 'up' | 'down') => {
@@ -141,6 +143,7 @@ export default function StudioDetailPage() {
     }
     setArtifact(prev => prev ? { ...prev, ...updated } : prev)
     setSelectedSlideIndex(targetIndex)
+    setIsDirty(true)
   }
 
   // --- Document Operations ---
@@ -154,6 +157,7 @@ export default function StudioDetailPage() {
         markdown: newMarkdown
       }
     } : prev)
+    setIsDirty(true)
   }
 
   if (loading || !artifact) {
@@ -170,9 +174,9 @@ export default function StudioDetailPage() {
   const activeSlide: SlideItem | undefined = presContent.slides?.[selectedSlideIndex]
 
   return (
-    <div className="flex-1 overflow-auto bg-white text-black min-h-screen flex flex-col font-sans">
+    <div className="flex-1 overflow-y-auto overflow-x-hidden bg-white text-black min-h-full flex flex-col font-sans">
       {/* Top Studio Action Bar */}
-      <div className="border-b border-black px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3 bg-white sticky top-0 z-30 font-mono text-xs">
+      <div className="border-b border-black px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3 bg-white sticky top-0 z-30 font-mono text-xs print:hidden">
         <div className="flex items-center gap-3 min-w-0">
           <Link
             href="/studio"
@@ -196,7 +200,10 @@ export default function StudioDetailPage() {
             <input
               type="text"
               value={artifact.title}
-              onChange={e => setArtifact({ ...artifact, title: e.target.value })}
+              onChange={e => {
+                setArtifact({ ...artifact, title: e.target.value })
+                setIsDirty(true)
+              }}
               placeholder="Titolo del progetto..."
               className="font-bold text-sm sm:text-base font-mono uppercase tracking-tight text-black bg-transparent outline-none border-b border-transparent hover:border-zinc-300 focus:border-black w-full max-w-sm sm:max-w-md truncate"
             />
@@ -229,43 +236,34 @@ export default function StudioDetailPage() {
             </button>
           </div>
 
-          {/* Quick Exports */}
-          {isPres ? (
-            <button
-              type="button"
-              onClick={() => exportPresentationToPptx({ title: artifact.title, content: presContent, courseName: artifact.course?.name })}
-              className="hidden sm:flex items-center gap-1 px-3 py-1.5 border border-black bg-white hover:bg-zinc-100 text-black font-bold uppercase transition-colors text-[11px]"
-              title="Esporta PowerPoint (.pptx)"
-            >
-              PPTX
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={() => exportDocumentToDocx({ title: artifact.title, content: docContent, courseName: artifact.course?.name })}
-              className="hidden sm:flex items-center gap-1 px-3 py-1.5 border border-black bg-white hover:bg-zinc-100 text-black font-bold uppercase transition-colors text-[11px]"
-              title="Esporta Word (.docx)"
-            >
-              DOCX
-            </button>
-          )}
-
-          {/* Salvataggio */}
+          {/* Salvataggio con indicatore stato cloud */}
           <button
             type="button"
             onClick={() => handleSave()}
-            disabled={saving}
-            className="flex items-center gap-1.5 px-4 py-1.5 border border-black bg-black text-white font-bold uppercase hover:bg-zinc-800 transition-colors shadow-[2px_2px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px]"
+            disabled={saving || !isDirty}
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 border border-black font-bold uppercase transition-colors text-xs ${
+              saving
+                ? 'bg-black text-white opacity-70 cursor-wait'
+                : isDirty
+                ? 'bg-black text-white hover:bg-zinc-800 shadow-[2px_2px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px]'
+                : 'bg-zinc-100 text-black border-black cursor-default'
+            }`}
+            title={isDirty ? 'Ci sono modifiche non salvate nel cloud' : 'Tutte le modifiche sono sincronizzate nel cloud'}
           >
-            {savedSuccess ? (
+            {saving ? (
               <>
-                <Check className="w-3.5 h-3.5 text-emerald-400" />
-                <span>Salvato</span>
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                <span>Salvataggio...</span>
+              </>
+            ) : isDirty ? (
+              <>
+                <Save className="w-3.5 h-3.5" />
+                <span>Salva</span>
               </>
             ) : (
               <>
-                <Save className="w-3.5 h-3.5" />
-                <span>{saving ? 'Salvataggio...' : 'Salva'}</span>
+                <Check className="w-3.5 h-3.5" />
+                <span>Salvato</span>
               </>
             )}
           </button>
@@ -273,7 +271,7 @@ export default function StudioDetailPage() {
       </div>
 
       {/* Main Workspace Area */}
-      <div className="flex-1 p-4 sm:p-6 max-w-7xl mx-auto w-full">
+      <div className="flex-1 p-4 sm:p-6 max-w-7xl mx-auto w-full print:p-0 print:max-w-none">
         {/* =========================================================================
             PRESENTATION MODE
             ========================================================================= */}
@@ -284,6 +282,7 @@ export default function StudioDetailPage() {
               <PresentationViewer 
                 content={presContent} 
                 title={artifact.title} 
+                courseName={artifact.course?.name}
               />
             </div>
           ) : (

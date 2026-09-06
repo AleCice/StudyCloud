@@ -41,8 +41,18 @@ export const GEMINI_MODELS: GeminiModelInfo[] = [
     name: 'Gemini 3.7 Flash',
     version: '3.7',
     category: 'frontier',
-    description: 'Modello di ultima generazione con capacità di pensiero dinamico e risposta ultra-reattiva.',
-    badge: 'Novità • Massima Reattività',
+    description: 'Modello ad alte prestazioni con capacità di pensiero dinamico e risposta ultra-reattiva.',
+    badge: 'Frontier • Massima Reattività',
+    speed: 'ultra',
+    contextWindow: '1M token'
+  },
+  {
+    id: 'gemini-3.8-flash',
+    name: 'Gemini 3.8 Flash',
+    version: '3.8',
+    category: 'frontier',
+    description: 'Nuovissimo modello con latenza minima, massima precisione scientifica e ragionamento rapido.',
+    badge: 'Novità • Ultra-Reattivo',
     speed: 'ultra',
     contextWindow: '1M token'
   },

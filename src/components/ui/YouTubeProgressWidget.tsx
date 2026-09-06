@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react'
 import { 
-  Youtube, CheckCircle2, AlertCircle, Loader2, 
+  Youtube, Check, Loader2, 
   ChevronUp, ChevronDown, X, Sparkles, Brain, FileText, Database
 } from 'lucide-react'
 
@@ -54,16 +54,16 @@ export default function YouTubeProgressWidget({ state, onClose }: Props) {
   const currentIdx = getCurrentStepIndex()
 
   return (
-    <div className="fixed bottom-4 left-4 z-50 w-84 sm:w-96 bg-white border border-slate-200 rounded-2xl shadow-2xl overflow-hidden animate-in slide-in-from-bottom-5 duration-200 select-none">
+    <div className="fixed bottom-4 left-4 z-50 w-80 sm:w-96 bg-white border-2 border-black shadow-[6px_6px_0px_rgba(0,0,0,1)] overflow-hidden select-none font-mono text-xs text-black">
       {/* Header Bar */}
-      <div className="flex items-center justify-between px-3.5 py-2.5 bg-slate-900 text-white">
+      <div className="flex items-center justify-between px-3 py-2 bg-black text-white border-b border-black">
         <div className="flex items-center gap-2 min-w-0">
-          <div className="p-1 bg-red-600 rounded-md shrink-0">
-            <Youtube className="w-3.5 h-3.5 text-white" />
+          <div className="border border-white p-0.5 bg-black text-white shrink-0">
+            <Youtube className="w-3.5 h-3.5" />
           </div>
           <div className="min-w-0">
-            <span className="text-xs font-bold truncate block">
-              {isComplete ? 'Video Indicizzato con Successo' : isError ? 'Errore Elaborazione' : 'Elaborazione Video YouTube'}
+            <span className="text-xs font-bold uppercase truncate block tracking-tight">
+              {isComplete ? 'Video Indicizzato' : isError ? 'Errore Elaborazione' : 'Ingestione YouTube'}
             </span>
           </div>
         </div>
@@ -71,14 +71,14 @@ export default function YouTubeProgressWidget({ state, onClose }: Props) {
         <div className="flex items-center gap-1 shrink-0">
           <button
             onClick={() => setIsMinimized(!isMinimized)}
-            className="p-1 text-slate-400 hover:text-white rounded transition-colors"
+            className="p-1 text-zinc-300 hover:text-white transition-colors"
             title={isMinimized ? "Espandi dettagli" : "Riduci a icona"}
           >
             {isMinimized ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
           </button>
           <button
             onClick={onClose}
-            className="p-1 text-slate-400 hover:text-red-400 rounded transition-colors"
+            className="p-1 text-zinc-300 hover:text-white transition-colors"
             title="Chiudi avviso"
           >
             <X className="w-3.5 h-3.5" />
@@ -87,89 +87,75 @@ export default function YouTubeProgressWidget({ state, onClose }: Props) {
       </div>
 
       {/* Animated Progress Bar */}
-      <div className="w-full bg-slate-100 h-1.5 overflow-hidden">
+      <div className="w-full bg-zinc-100 h-2 border-b border-black p-[1px]">
         <div 
-          className={`h-full transition-all duration-500 ${
-            isError ? 'bg-red-500' : isComplete ? 'bg-emerald-500' : 'bg-red-600'
-          }`}
+          className="h-full bg-black transition-all duration-300"
           style={{ width: `${Math.max(5, state.progress)}%` }}
         />
       </div>
 
       {/* Expanded Content */}
       {!isMinimized && (
-        <div className="p-4 space-y-3 text-xs bg-white">
+        <div className="p-3.5 space-y-3 bg-white">
           {/* Video Title & Thumbnail */}
-          <div className="flex items-start gap-3 pb-2 border-b border-slate-100">
+          <div className="flex items-start gap-3 pb-2.5 border-b border-black">
             {state.thumbnailUrl && (
               <img
                 src={state.thumbnailUrl}
                 alt="Thumbnail"
-                className="w-14 h-10 object-cover rounded-lg shrink-0 border border-slate-200"
+                className="w-14 h-10 object-cover shrink-0 border border-black"
               />
             )}
             <div className="min-w-0 flex-1">
-              <p className="font-bold text-slate-900 truncate leading-tight">{state.title || 'Video YouTube'}</p>
-              <p className="text-[11px] text-slate-500 mt-0.5 flex items-center gap-1">
-                {inProgress && <Loader2 className="w-3 h-3 animate-spin text-red-600 shrink-0" />}
+              <p className="font-bold uppercase text-xs truncate leading-tight">{state.title || 'Video YouTube'}</p>
+              <p className="text-[10px] text-zinc-500 mt-1 flex items-center gap-1 font-sans">
+                {inProgress && <Loader2 className="w-3 h-3 animate-spin text-black shrink-0" />}
                 <span className="truncate">{state.stepMessage}</span>
               </p>
             </div>
           </div>
 
           {/* Steps Pipeline Checklist */}
-          <div className="space-y-1.5 py-1">
+          <div className="space-y-1 py-1">
             {stepsList.map((st, idx) => {
               const isPast = idx < currentIdx || isComplete
               const isCurrent = idx === currentIdx && !isComplete && !isError
-              const isFuture = idx > currentIdx
-
               const Icon = st.icon
 
               return (
                 <div 
                   key={st.key}
-                  className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg transition-colors ${
-                    isCurrent ? 'bg-red-50/70 border border-red-200' : isPast ? 'bg-slate-50/50' : 'opacity-40'
+                  className={`flex items-center justify-between px-2 py-1.5 border transition-colors ${
+                    isCurrent 
+                      ? 'bg-zinc-100 border-black font-bold' 
+                      : isPast 
+                      ? 'border-transparent text-zinc-600' 
+                      : 'border-transparent opacity-40 text-zinc-400'
                   }`}
                 >
                   <div className="flex items-center gap-2">
-                    <Icon className={`w-3.5 h-3.5 ${isCurrent ? 'text-red-600 animate-pulse' : isPast ? 'text-emerald-600' : 'text-slate-400'}`} />
-                    <span className={`text-[11px] font-medium ${isCurrent ? 'text-red-950 font-bold' : isPast ? 'text-slate-800' : 'text-slate-400'}`}>
+                    <Icon className="w-3.5 h-3.5" />
+                    <span className="text-[11px] uppercase tracking-tight">
                       {st.label}
                     </span>
                   </div>
 
                   {isPast ? (
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                    <div className="w-4 h-4 bg-black text-white flex items-center justify-center text-[10px] font-bold">
+                      ✓
+                    </div>
                   ) : isCurrent ? (
-                    <Loader2 className="w-3.5 h-3.5 text-red-600 animate-spin shrink-0" />
+                    <Loader2 className="w-3.5 h-3.5 text-black animate-spin shrink-0" />
                   ) : null}
                 </div>
               )
             })}
           </div>
 
-          {/* Error Message */}
-          {isError && state.error && (
-            <div className="p-2.5 bg-red-50 text-red-700 border border-red-200 rounded-xl text-[11px] flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 shrink-0 text-red-600" />
-              <span>{state.error}</span>
-            </div>
-          )}
-
-          {/* Success summary badge */}
-          {isComplete && (
-            <div className="p-2.5 bg-emerald-50 text-emerald-900 border border-emerald-200 rounded-xl text-[11px] flex items-center justify-between">
-              <div className="flex items-center gap-1.5">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                <span className="font-semibold">Vettori pgvector salvati!</span>
-              </div>
-              {state.chunksCount && (
-                <span className="bg-emerald-200/60 text-emerald-900 px-2 py-0.5 rounded-full text-[10px] font-bold">
-                  {state.chunksCount} frammenti
-                </span>
-              )}
+          {/* Error message */}
+          {state.error && (
+            <div className="p-2 border border-black bg-zinc-100 text-black text-[11px] font-bold uppercase">
+              [ERRORE]: {state.error}
             </div>
           )}
         </div>

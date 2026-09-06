@@ -1,7 +1,9 @@
 /**
- * Utility per la crittografia AES-GCM delle chiavi API in LocalStorage
- * Utilizza Web Crypto API (window.crypto.subtle) nativa del browser
+ * Utility per la crittografia AES-GCM delle chiavi API in LocalStorage e Database Supabase
+ * Utilizza Web Crypto API (window.crypto.subtle) e Server Actions con AES-256-GCM
  */
+
+import { saveUserApiKeyAction, getUserApiKeyAction } from '@/app/(dashboard)/settings/actions'
 
 const STORAGE_KEYS = {
   GEMINI: '_enc_gemini_api_key',
@@ -10,6 +12,8 @@ const STORAGE_KEYS = {
 } as const
 
 const APP_DERIVATION_SECRET = "UniAssistant_Secure_Key_Vault_v1_2026"
+
+let memoryCachedKey: string | null = null
 
 /**
  * Recupera o genera un salt crittografico persistente nel browser
@@ -119,33 +123,64 @@ export async function decryptText(encryptedBase64: string): Promise<string | nul
 }
 
 /**
- * Salva una chiave API cifrata in localStorage
+ * Salva una chiave API cifrata sia in localStorage (cache rapida) che sul Database Supabase (AES-256-GCM)
  */
 export async function saveEncryptedApiKey(provider: 'gemini', apiKey: string): Promise<void> {
-  if (typeof window === 'undefined') return
-  const storageKey = STORAGE_KEYS.GEMINI
-  
   const clean = apiKey.trim()
-  if (!clean) {
-    localStorage.removeItem(storageKey)
-    return
+  memoryCachedKey = clean || null
+
+  if (typeof window !== 'undefined') {
+    const storageKey = STORAGE_KEYS.GEMINI
+    if (!clean) {
+      localStorage.removeItem(storageKey)
+    } else {
+      const encrypted = await encryptText(clean)
+      localStorage.setItem(storageKey, encrypted)
+    }
   }
 
-  const encrypted = await encryptText(clean)
-  localStorage.setItem(storageKey, encrypted)
+  // Persisti la chiave cifrata nel Database Supabase per renderla disponibile su qualsiasi dispositivo
+  try {
+    await saveUserApiKeyAction(clean)
+  } catch (err) {
+    console.error("Errore salvataggio chiave API su database Supabase:", err)
+  }
 }
 
 /**
- * Recupera e decifra una chiave API da localStorage
+ * Recupera e decifra una chiave API da memoria, localStorage o direttamente dal Database Supabase
  */
 export async function getEncryptedApiKey(provider: 'gemini' = 'gemini'): Promise<string | null> {
-  if (typeof window === 'undefined') return null
-  const storageKey = STORAGE_KEYS.GEMINI
-  
-  const raw = localStorage.getItem(storageKey)
-  if (!raw) return null
+  if (memoryCachedKey) return memoryCachedKey
 
-  return await decryptText(raw)
+  if (typeof window !== 'undefined') {
+    const storageKey = STORAGE_KEYS.GEMINI
+    const raw = localStorage.getItem(storageKey)
+    if (raw) {
+      const decrypted = await decryptText(raw)
+      if (decrypted) {
+        memoryCachedKey = decrypted
+        return decrypted
+      }
+    }
+  }
+
+  // Fallback / Sincronizzazione: recupero dal Database Supabase (es. nuovo dispositivo o cache svuotata)
+  try {
+    const dbKey = await getUserApiKeyAction()
+    if (dbKey) {
+      memoryCachedKey = dbKey
+      if (typeof window !== 'undefined') {
+        const encrypted = await encryptText(dbKey)
+        localStorage.setItem(STORAGE_KEYS.GEMINI, encrypted)
+      }
+      return dbKey
+    }
+  } catch (err) {
+    console.warn("Impossibile recuperare la chiave API dal database Supabase:", err)
+  }
+
+  return null
 }
 
 /**
